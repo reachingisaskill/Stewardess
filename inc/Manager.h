@@ -2,11 +2,16 @@
 #ifndef MANAGER_H_
 #define MANAGER_H_
 
+#include "Message.h"
+#include "Connection.h"
+#include "MutexedBuffer.h"
+
 #include <mutex>
 
 
 // Forward declare the connection struct so we can hide the backend PImpl style.
-struct Management;
+struct ManagerData;
+class Connection;
 
 // Define the main interface
 class Manager
@@ -16,7 +21,17 @@ class Manager
     static size_t _instanceCount;
     static std::mutex _instanceCountMutex;
 
-    Management* _management;
+    // Data
+    ManagerData* _data;
+
+    // Mutexed message buffer
+    MutexedBuffer<Message> _messageBuffer;
+    std::condition_variable _bufferCondition;
+
+  protected:
+    // Add a new connection once the listener has found someone
+    void addConnection( Connection* ) {}
+
 
   public:
 
@@ -30,9 +45,18 @@ class Manager
     Manager& operator=( Manager&& ) = delete;
 
 
-    // Calls dispatch and starts the event loop
+    // Start the loop listening for connections
     void run();
 
+    // Close the listening loop and clear all the events
+    void close();
+
+    // Blocks the calling thread until either a read event occurs or some error must be processed
+    bool pop( Message& );
+
+
+    // Push a message onto the message buffer
+    void publishMessage( Message );
 };
 
 #endif // MANAGER_H_

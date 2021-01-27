@@ -25,7 +25,7 @@ INC_FILES = ${shell ls $(INC_DIR)}
 
 #Also Includes and Libs
 INC_FLAGS += -I${INC_DIR}
-LIB_FLAGS += -levent
+LIB_FLAGS += -levent -lpthread
 
 
 

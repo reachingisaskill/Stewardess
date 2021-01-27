@@ -1,13 +1,6 @@
 
 #include "Manager.h"
-
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <event2/event.h>
-#include <event2/buffer.h>
-#include <event2/bufferevent.h>
+#include "ManagerData.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -18,31 +11,22 @@ std::mutex Manager::_instanceCountMutex;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Management data 
 
-class Management
-{
-  public :
-    Management( int ) {}
-};
-
-
-////////////////////////////////////////////////////////////////////////////////
 
 Manager::Manager( int port_number ) :
-  _management( nullptr )
+  _data( nullptr )
 {
   std::lock_guard<std::mutex> lock( _instanceCountMutex );
   _instanceCount += 1;
 
-//  _management = new Management( port_number );
+  _data = new ManagerData( this, port_number );
 }
 
 
 Manager::~Manager()
 {
-  if ( _management != nullptr )
-    delete _management;
+  if ( _data != nullptr )
+    delete _data;
 
   std::lock_guard<std::mutex> lock( _instanceCountMutex );
   if ( (--_instanceCount) == 0 )
@@ -50,4 +34,31 @@ Manager::~Manager()
 }
 
 
+void Manager::run()
+{
+  // Setup and start the libevent listener loop and return
+  std::cout << "Calling dispatch" << std::endl;
+  _data->dispatch();
+}
+
+
+void Manager::close()
+{
+}
+
+
+bool Manager::pop( Message& message )
+{
+  return _messageBuffer.waitPop( message );
+}
+
+
+void Manager::publishMessage( Message message )
+{
+  std::cout << "Publishing message" << std::endl;
+  // Push the message to the buffer
+  _messageBuffer.push( message );
+  // Notify a change on the condition variable in case anyone is waiting
+  _bufferCondition.notify_one();
+}
 
