@@ -29,6 +29,9 @@ class Connection
     ~Connection();
 
     ConnectionData* getData();
+
+    // Returns true if the connection is still alive
+    bool isOpen() const;
 };
 
 #endif // CONNECTION_H_

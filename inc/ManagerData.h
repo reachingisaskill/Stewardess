@@ -19,6 +19,7 @@
 
 // Forward declare the manager class so we can hold a pointer to our owner
 class Manager;
+class MessageBuilderBase;
 
 struct ManagerData
 {
@@ -40,6 +41,8 @@ struct ManagerData
   // Time out time for read/write attempts
   timeval timeout;
 
+  // Builder for the messages
+  MessageBuilderBase* messageBuilder;
 
 
   // Basic setup

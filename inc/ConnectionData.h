@@ -14,6 +14,7 @@
 
 
 class Manager;
+class MessageBuilderBase;
 
 struct ConnectionData
 {
@@ -26,14 +27,11 @@ struct ConnectionData
   // Pointer to the owning manager
   Manager* manager;
 
-  // The message currently being constructed
-  std::string currentMessage;
+  // Message builder
+  MessageBuilderBase* messageBuilder;
 
   // The raw char stream being processed
   char rawBuffer[ RAW_BUFFER_SIZE ];
-
-  // Flag to indicate that we are halfway through a message
-  bool reading;
 };
 
 #endif // CONNECTION_DATA_H_

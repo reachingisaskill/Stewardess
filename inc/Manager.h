@@ -2,7 +2,7 @@
 #ifndef MANAGER_H_
 #define MANAGER_H_
 
-#include "Message.h"
+#include "MessageBuilderBase.h"
 #include "Connection.h"
 #include "MutexedBuffer.h"
 
@@ -25,8 +25,8 @@ class Manager
     ManagerData* _data;
 
     // Mutexed message buffer
-    MutexedBuffer<Message> _messageBuffer;
-    std::condition_variable _bufferCondition;
+    MutexedBuffer<MessageBase*> _messageBuffer;
+
 
   protected:
     // Add a new connection once the listener has found someone
@@ -35,7 +35,7 @@ class Manager
 
   public:
 
-    Manager( int );
+    Manager( int, MessageBuilderBase* );
 
     ~Manager();
 
@@ -52,11 +52,14 @@ class Manager
     void close();
 
     // Blocks the calling thread until either a read event occurs or some error must be processed
-    bool pop( Message& );
+    bool pop( MessageBase*& );
+
+    // Pushes a message in the send queue.
+    void push( MessageBase* );
 
 
     // Push a message onto the message buffer
-    void publishMessage( Message );
+    void publishMessage( MessageBase* );
 };
 
 #endif // MANAGER_H_
