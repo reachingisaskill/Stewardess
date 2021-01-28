@@ -26,6 +26,12 @@ struct ManagerData
   // Pointer to owner
   Manager* owner;
 
+  // The event base. Platform for buffer events to be launched from
+  event_base* eventBase;
+
+  // Pointer to the listener event
+  evconnlistener* listener;
+
   // Listener thread
   std::thread listenerThread;
 
@@ -52,6 +58,22 @@ struct ManagerData
   void dispatch();
 
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Declare the listener call back and dispatch functions
+
+void dispatchThread( ManagerData* );
+void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
+void listenerErrorCB( evconnlistener*, void* );
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Declare the bufferevent call back and dispatch functions
+
+void bufferReadCB( bufferevent*, void* );
+void bufferWriteCB( bufferevent*, void* );
+void bufferEventCB( bufferevent*, short, void* );
+
 
 #endif // MANAGER_DATA_H_
 

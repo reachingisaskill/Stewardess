@@ -18,31 +18,46 @@ int main( int, char** )
   std::cout << "Running manager" << std::endl;
   the_manager.run();
 
-  while( true )
+
+  Event event;
+  while( the_manager.pop( event ) )
   {
-
-    MessageBase* message_base;
-    if ( the_manager.pop( message_base ) )
+    switch( event.getEventType() )
     {
-      TestMessage* message = (TestMessage*)message_base;
-      std::cout << "Message received: " << message->getMessage() << std::endl;
+      case EventType::Null :
+        std::cerr << "Something catastrophic has happened. Fuck..." << std::endl;
+        break;
 
-      std::time_t ts = message->getTimeStamp();
-      std::cout << "Message Time Stamp = " << std::put_time( std::localtime( &ts ), "%F %T" ) << std::endl;
+      case EventType::Listener :
+        break;
 
-      // Process the message...
+      case EventType::Read :
+        {
+          TestMessage* message = (TestMessage*)event.readEvent.message;
+          std::cout << "Message received: " << message->getMessage() << std::endl;
+
+          std::time_t ts = event.getTimeStamp();
+          std::cout << "Message Time Stamp = " << std::put_time( std::localtime( &ts ), "%F %T" ) << std::endl;
 
 
+          if ( message->getMessage() == "{shutdown}" )
+          {
+            the_manager.stop();
+          }
+        }
+        break;
 
-      delete message_base;
+      case EventType::Write :
+        break;
+
+      case EventType::Connection :
+        break;
+
+      case EventType::Server :
+        break;
     }
-    else // Some other signal
-    {
-      // Not implemented yet
-      std::cout << "Error occured. Breaking out." << std::endl;
-      break;
-    }
 
+    event.free();
   }
 
   the_manager.close();

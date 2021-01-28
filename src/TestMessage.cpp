@@ -4,6 +4,7 @@
 
 TestMessageBuilder::TestMessageBuilder() :
   _currentString(),
+  _isBuilding( false ),
   _isBuilt( false )
 {
   _currentString.reserve( 4096 );

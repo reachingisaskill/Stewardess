@@ -7,6 +7,7 @@ class MessageBase;
 class MessageBuilderBase
 {
   public:
+    virtual ~MessageBuilderBase() {}
 
     // Return a finished message
     virtual MessageBase* getMessage() = 0;

@@ -13,28 +13,13 @@ std::mutex Manager::_instanceCountMutex;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Declare the listener call back and dispatch functions
-
-void dispatchThread( ManagerData* );
-void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
-void listenerErrorCB( evconnlistener*, void* );
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Declare the bufferevent call back and dispatch functions
-
-void bufferReadCB( bufferevent*, void* );
-void bufferWriteCB( bufferevent*, void* );
-void bufferEventCB( bufferevent*, short, void* );
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Manager Member Functions
 
 Manager::Manager( int port_number, MessageBuilderBase* builder ) :
   _data( nullptr ),
-  _messageBuffer()
-
+  _eventBuffer(),
+  _connectionMap(),
+  _isListening( false )
 {
   std::lock_guard<std::mutex> lock( _instanceCountMutex );
   _instanceCount += 1;
@@ -46,6 +31,9 @@ Manager::Manager( int port_number, MessageBuilderBase* builder ) :
 
 Manager::~Manager()
 {
+  if ( _data->messageBuilder != nullptr )
+    delete _data->messageBuilder;
+
   if ( _data != nullptr )
     delete _data;
 
@@ -57,34 +45,97 @@ Manager::~Manager()
 
 void Manager::run()
 {
+  // Configure the event base.
+  _data->eventBase = event_base_new();
+  if ( _data->eventBase == nullptr )
+  {
+    throw std::runtime_error( "Could not create a base event. Unknow error." );
+  }
+
   // Setup and start the libevent listener loop and return
   std::cout << "Calling dispatch" << std::endl;
   _data->dispatch();
+
+  _isListening = true;
+}
+
+
+void Manager::stop()
+{
+  // Tell the libevent loop to stop
+  evconnlistener_disable( _data->listener );
+  _eventBuffer.setFlag( true );
 }
 
 
 void Manager::close()
 {
+  // Join the dispatch thread
+  _data->listenerThread.join();
+
+  // Clear and free the event data
+  Event temp_event;
+  while ( _eventBuffer.pop( temp_event ) ) temp_event.free();
+
+  // Free all the connection data
+  for ( ConnectionMap::iterator it = _connectionMap.begin(); it != _connectionMap.end(); ++it )
+  {
+    delete it->second;
+  }
+  _connectionMap.clear();
+
+  // Free the event base
+  event_base_free( _data->eventBase );
 }
 
 
-bool Manager::pop( MessageBase*& message )
+bool Manager::pop( Event& event )
 {
-  return _messageBuffer.waitPop( message );
+  return _eventBuffer.waitPop( event );
 }
 
 
-void Manager::push( MessageBase* /*message*/ )
+void Manager::publishEvent( Event event )
 {
+  std::cout << "Publishing event" << std::endl;
 
-}
-
-
-void Manager::publishMessage( MessageBase* message )
-{
-  std::cout << "Publishing message" << std::endl;
   // Push the message to the buffer
-  _messageBuffer.push( message );
+  _eventBuffer.push( event );
+}
+
+
+void Manager::addConnection( Connection* connection )
+{
+  std::unique_lock<std::mutex> lock( _connectionMapMutex );
+
+  // This should never be true. Other wise we are adding the same connection twice...
+  if ( _connectionMap.find( connection->getIDNumber() ) != _connectionMap.end() )
+  {
+    publishEvent( Event( ServerEvent( { std::string( "Connection list is corrupted" ) } ) ) );
+  }
+
+  // Add connection to the map
+  _connectionMap[ connection->getIDNumber() ] = connection;
+  
+  // Publish the event
+  publishEvent( Event( ListenerEvent( { connection } ) ) );
+}
+
+
+void Manager::removeConnection( Connection* connection )
+{
+  std::unique_lock<std::mutex> lock( _connectionMapMutex );
+
+  ConnectionMap::iterator found = _connectionMap.find( connection->getIDNumber() );
+
+  // This should never be true. Other wise we are adding the same connection twice...
+  if ( found != _connectionMap.end() )
+  {
+    _connectionMap.erase( found );
+  }
+
+  // Delete the connection handle
+  delete connection;
 }
 
 
@@ -120,35 +171,26 @@ void ManagerData::dispatch()
 void dispatchThread( ManagerData* management )
 {
   std::cout << "  Starting dispatch thread." << std::endl;
-  // Configure the event base.
-  event_base* base = event_base_new();
-  if ( base == nullptr )
-  {
-    throw std::runtime_error( "Could not create a base event. Unknow error." );
-  }
 
   // Build a listener and bind it to a new socket
-  evconnlistener* listener = evconnlistener_new_bind( base, listenerAcceptCB, (void*)management, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (sockaddr*)&management->socketAddress, sizeof(management->socketAddress) );
-  if ( listener == nullptr )
+  management->listener = evconnlistener_new_bind( management->eventBase, listenerAcceptCB, (void*)management, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (sockaddr*)&management->socketAddress, sizeof(management->socketAddress) );
+  if ( management->listener == nullptr )
   {
     throw std::runtime_error( "Could not bind a listener to the requested socket." );
   }
 
   // Set the error call back function on the listener
-  evconnlistener_set_error_cb( listener, listenerErrorCB );
+  evconnlistener_set_error_cb( management->listener, listenerErrorCB );
 
   std::cout << "  Configured listener. Dispatching." << std::endl;
 
   // Start the libevent loop using the base event
-  event_base_dispatch( base );
+  event_base_dispatch( management->eventBase );
 
-  std::cout << "  Freeing listener and event base" << std::endl;
+  std::cout << "  Freeing listener" << std::endl;
 
   // Free the listener
-  evconnlistener_free( listener );
-
-  // Free the event base
-  event_base_free( base );
+  evconnlistener_free( management->listener );
 }
 
 
@@ -231,7 +273,10 @@ void bufferReadCB( bufferevent* event, void* data )
       // If there is a finished message
       if ( builder->isBuilt() )
       {
-        connection_data->manager->publishMessage( builder->getMessage() );
+        // Create a read event
+        Event new_event( ReadEvent( { connection, builder->getMessage() } ) );
+        // and publish it
+        connection_data->manager->publishEvent( new_event );
       }
 
       if ( builder->error() )
@@ -277,9 +322,9 @@ void bufferEventCB( bufferevent* event, short flags, void* data )
 
   if ( flags & BEV_EVENT_EOF )
   {
-    std::cerr << "  Socket closed?" << std::endl;
+    std::cerr << "  Socket closed" << std::endl;
     bufferevent_free( event );
-    delete connection;
+    connection->getData()->manager->removeConnection( connection );
   }
 }
 

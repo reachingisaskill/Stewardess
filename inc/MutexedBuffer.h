@@ -42,7 +42,7 @@ class MutexedBuffer
     std::condition_variable _waitEmpty;
 
     // Flag to cause the wait functions to break, so threads can be joined following an error.
-    std::atomic<bool> _errorFlag;
+    std::atomic<bool> _flag;
 
   public:
     MutexedBuffer();
@@ -75,10 +75,10 @@ class MutexedBuffer
     void waitForEmpty();
 
     // Set the error flag and notify the condition variables. Restarts all waiting threads
-    void setErrorFlag( bool );
+    void setFlag( bool );
 
     // Return the value of the error flag
-    bool error() const { return _errorFlag; }
+    bool flag() const { return _flag; }
 };
 
 
@@ -92,7 +92,7 @@ MutexedBuffer< TYPE >::MutexedBuffer() :
   _start( nullptr ),
   _end( nullptr ),
   _elementCount( 0 ),
-  _errorFlag( false )
+  _flag( false )
 {
 }
 
@@ -281,11 +281,11 @@ bool MutexedBuffer< TYPE >::waitPop( TYPE& data )
 
   if ( _elementCount == 0 )
   {
-    _waitData.wait( counterLock, [&]()->bool{ return (_elementCount > 0) || _errorFlag; } );
+    _waitData.wait( counterLock, [&]()->bool{ return (_elementCount > 0) || _flag; } );
   }
 
   // If there's an error return false
-  if ( _errorFlag )
+  if ( _flag )
   {
     counterLock.unlock();
     return false;
@@ -329,7 +329,7 @@ void MutexedBuffer< TYPE >::waitForData()
 {
   std::unique_lock<std::mutex> counterLock( _mutexCounter );
 
-  _waitData.wait( counterLock, [&]()->bool{ return (_elementCount > 0) || _errorFlag; } );
+  _waitData.wait( counterLock, [&]()->bool{ return (_elementCount > 0) || _flag; } );
 
   counterLock.unlock();
 }
@@ -340,16 +340,16 @@ void MutexedBuffer< TYPE >::waitForEmpty()
 {
   std::unique_lock<std::mutex> counterLock( _mutexCounter );
 
-  _waitEmpty.wait( counterLock, [&]()->bool{ return (_elementCount == 0) || _errorFlag; } );
+  _waitEmpty.wait( counterLock, [&]()->bool{ return (_elementCount == 0) || _flag; } );
 
   counterLock.unlock();
 }
 
 
 template < class TYPE >
-void MutexedBuffer< TYPE >::setErrorFlag( bool value )
+void MutexedBuffer< TYPE >::setFlag( bool value )
 {
-  _errorFlag = value;
+  _flag = value;
 
   _waitEmpty.notify_all();
   _waitData.notify_all();

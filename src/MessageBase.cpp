@@ -2,11 +2,8 @@
 #include "MessageBase.h"
 
 
-MessageBase::MessageBase() :
-  _theConnection( nullptr ),
-  _timeStamp()
+MessageBase::MessageBase()
 {
-  std::time( &_timeStamp );
 }
 
 
