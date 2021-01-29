@@ -1,16 +1,27 @@
 
-#ifndef MESSAGE_BUILDER_BASE_H_
-#define MESSAGE_BUILDER_BASE_H_
+#ifndef SERIALIZER_BASE_H_
+#define SERIALIZER_BASE_H_
 
-class MessageBase;
+#include "Definitions.h"
 
-class MessageBuilderBase
+class Payload;
+
+class Serializer
 {
   public:
-    virtual ~MessageBuilderBase() {}
+    virtual ~Serializer() {}
+
+    // Turns a payload into a message for writing
+    virtual void serialize( Payload* ) = 0;
+
+    // Turns a payload into a message for writing
+    virtual const char* payloadBuffer() = 0;
+
+    // Turns a payload into a message for writing
+    virtual size_t payloadBufferSize() = 0;
 
     // Return a finished message
-    virtual MessageBase* getMessage() = 0;
+    virtual Payload* getPayload() = 0;
 
     // Return a flag to indicate that a message is half-built.
     virtual bool isBuilding() const = 0;
@@ -21,23 +32,12 @@ class MessageBuilderBase
     // Push a character into the processing system
     virtual void build( char ) = 0;
 
-    // Create a clone for each connection
-    virtual MessageBuilderBase* clone() const = 0;
-
     // Declares an error has happened
     virtual bool error() const = 0;
 
     // Return an error string describing the error
     virtual const char* getError() const = 0;
-
-
-    // Streamer iterface for simplicity
-    // Call build
-    void operator<<( char c ) { build( c ); }
-
-    // Call is built
-    operator bool() { return isBuilt(); }
 };
 
-#endif // MESSAGE_BUILDER_BASE_H_
+#endif // SERIALIZER_BASE_H_
 

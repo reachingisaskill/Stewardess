@@ -6,22 +6,20 @@
 
 
 class ConnectionData;
+class Payload;
 
 
 class Connection
 {
-  // Make it non-copyable
-  Connection( const Connection& ) = delete;
-  Connection& operator=( const Connection& ) = delete;
-
-  public:
-    typedef Connection* pointer;
+  friend void connectionUpdate( Connection* );
 
   private:
     static size_t _counter;
 
+    // Hidden engine data
     ConnectionData* _data;
 
+    // "Unique" ID of the connection
     size_t _idNumber;
 
   public:
@@ -35,7 +33,13 @@ class Connection
     size_t getIDNumber() const { return _idNumber; }
 
     // Returns true if the connection is still alive
-    bool isOpen() const;
+    bool isOpen() const { return _data != nullptr; }
+
+    // Force the connection to close at the end of the current exectution
+    void close() const;
+
+    // Writes a payload out the output buffer
+    void write( Payload* ) const;
 };
 
 #endif // CONNECTION_H_

@@ -14,7 +14,8 @@
 
 
 class Manager;
-class MessageBuilderBase;
+class Serializer;
+class ServerState;
 
 struct ConnectionData
 {
@@ -24,14 +25,17 @@ struct ConnectionData
   // Addres of the client bound to the socket
   sockaddr_in socketAddress;
 
-  // Pointer to the owning manager
-  Manager* manager;
+  // Pointer to the server receiving the callbacks
+  ServerState* server;
 
   // Message builder
-  MessageBuilderBase* messageBuilder;
+  Serializer* serializer;
 
   // The raw char stream being processed
   char rawBuffer[ RAW_BUFFER_SIZE ];
+
+  // Flag to trigger the destruction of the connection data
+  bool close;
 };
 
 #endif // CONNECTION_DATA_H_

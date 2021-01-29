@@ -1,7 +1,8 @@
 
 #include "Connection.h"
 #include "ConnectionData.h"
-#include "MessageBuilderBase.h"
+#include "Payload.h"
+#include "Serializer.h"
 
 
 size_t Connection::_counter = 0;
@@ -16,12 +17,28 @@ Connection::Connection( ConnectionData* d ) :
 
 Connection::~Connection()
 {
-  delete _data->messageBuilder;
-  delete _data;
+  if ( _data != nullptr )
+  {
+    delete _data->serializer;
+    delete _data;
+  }
 }
 
 ConnectionData* Connection::getData()
 {
   return _data;
+}
+
+
+void Connection::close() const
+{
+  _data->close = true;
+}
+
+
+void Connection::write( Payload* p ) const
+{
+  _data->serializer->serialize( p );
+  bufferevent_write( _data->bufferEvent, _data->serializer->payloadBuffer(), _data->serializer->payloadBufferSize() );
 }
 

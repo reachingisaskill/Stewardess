@@ -26,17 +26,19 @@ struct ManagerData
   // Pointer to owner
   Manager* owner;
 
-  // The event base. Platform for buffer events to be launched from
+  // The server pointer
+  ServerState* server;
+
+
+  // The listener event base. Platform for the listener event to be launched from
   event_base* eventBase;
 
   // Pointer to the listener event
   evconnlistener* listener;
 
-  // Listener thread
-  std::thread listenerThread;
+  // Pointer to the signal event
+  event* signalEvent;
 
-  // Port to listen on
-  int portNumber;
 
   // The socket we're listening on
   evutil_socket_t socket;
@@ -44,35 +46,21 @@ struct ManagerData
   // The address of the socket we're listening to
   sockaddr_in socketAddress;
 
+
   // Time out time for read/write attempts
   timeval timeout;
 
-  // Builder for the messages
-  MessageBuilderBase* messageBuilder;
 
+  // Map of all connections
+  ConnectionMap connectionMap; 
 
-  // Basic setup
-  ManagerData( Manager*, int );
+  // Number of parallel threads to handle connection events
+  unsigned numThreads;
 
-  // Start the listener event
-  void dispatch();
+  // Listener thread
+  ThreadList threads;
 
 };
-
-////////////////////////////////////////////////////////////////////////////////
-// Declare the listener call back and dispatch functions
-
-void dispatchThread( ManagerData* );
-void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
-void listenerErrorCB( evconnlistener*, void* );
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Declare the bufferevent call back and dispatch functions
-
-void bufferReadCB( bufferevent*, void* );
-void bufferWriteCB( bufferevent*, void* );
-void bufferEventCB( bufferevent*, short, void* );
 
 
 #endif // MANAGER_DATA_H_

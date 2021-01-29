@@ -3,10 +3,6 @@
 #define MANAGER_H_
 
 #include "Definitions.h"
-#include "MessageBuilderBase.h"
-#include "Connection.h"
-#include "Event.h"
-#include "MutexedBuffer.h"
 
 #include <mutex>
 
@@ -14,6 +10,7 @@
 // Forward declare the connection struct so we can hide the backend PImpl style.
 struct ManagerData;
 class Connection;
+class ServerState;
 
 // Define the main interface
 class Manager
@@ -26,23 +23,9 @@ class Manager
     // Data
     ManagerData* _data;
 
-    // Mutexed message buffer
-    MutexedBuffer<Event> _eventBuffer;
-
-    // Map of all connections
-    ConnectionMap _connectionMap; 
-    mutable std::mutex _connectionMapMutex;
-
-    // True when there is an active listener object enabled
-    bool _isListening;
-
-
-  protected:
-
-
   public:
 
-    Manager( int, MessageBuilderBase* );
+    Manager( int );
 
     ~Manager();
 
@@ -52,31 +35,17 @@ class Manager
     Manager& operator=( Manager&& ) = delete;
 
 
+    // Set the number of connection handling threads
+    void setNumberThreads( unsigned );
+
+
     // Start the loop listening for connections
-    void run();
-
-    // Stops everything
-    void stop();
-
-    // Close the and clear all the events
-    void close();
-
-    // Blocks the calling thread until either a read event occurs or some error must be processed
-    bool pop( Event& );
+    void run( ServerState& );
 
 
-    // Push a message onto the message buffer
-    void publishEvent( Event );
+    // Returns a reference to the current server state object
+    ServerState& getServerState() const;
 
-    // Add a new connection to the connection map
-    void addConnection( Connection* );
-
-    // Remove a closed connection
-    void removeConnection( Connection* );
-
-
-    // Returns true if the listener is active
-    bool isListening() const { return _isListening; };
 };
 
 #endif // MANAGER_H_
