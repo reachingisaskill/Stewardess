@@ -24,7 +24,7 @@ class ServerState
 
 
     // Called when a write event is triggered
-    virtual void onWrite( Payload*, const Connection* ) {}
+    virtual void onWrite( const Connection* ) {}
 
 
     // Called when a new connection is added

@@ -50,15 +50,18 @@ struct ManagerData
   // Time out time for read/write attempts
   timeval timeout;
 
+  // Default size for the read/write buffers
+  size_t bufferSize;
 
-  // Map of all connections
-  ConnectionMap connectionMap; 
 
   // Number of parallel threads to handle connection events
   unsigned numThreads;
 
   // Listener thread
-  ThreadList threads;
+  ThreadVector threads;
+
+  // The last thread that used
+  size_t nextThread;
 
 };
 

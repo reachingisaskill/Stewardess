@@ -27,7 +27,10 @@ Manager::Manager( int port_number ) :
   _data = new ManagerData();
   _data->owner = this;
   _data->server = nullptr;
-  _data->numThreads = 1;
+  _data->numThreads = 2;
+  _data->nextThread = 0;
+  _data->bufferSize = 4096;
+  _data->threads.reserve( _data->numThreads );
 
   std::memset( &_data->socketAddress, 0, sizeof( _data->socketAddress ) );
   _data->socketAddress.sin_family = AF_INET;
@@ -112,7 +115,7 @@ void Manager::run( ServerState& server )
   // Do some cleanup
 
   std::cout << "Joining worker threads" << std::endl;
-  for ( ThreadList::iterator it = _data->threads.begin(); it != _data->threads.end(); ++it )
+  for ( ThreadVector::iterator it = _data->threads.begin(); it != _data->threads.end(); ++it )
   {
     (*it)->theThread.join();
     delete (*it);

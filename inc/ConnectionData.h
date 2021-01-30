@@ -2,24 +2,24 @@
 #ifndef CONNECTION_DATA_H_
 #define CONNECTION_DATA_H_
 
-#include <netinet/in.h>
-#include <event2/bufferevent.h>
+#include "Definitions.h"
+#include "LibeventIncludes.h"
+#include "Buffer.h"
 
 #include <string>
 
 
-#ifndef RAW_BUFFER_SIZE
-#define RAW_BUFFER_SIZE 4096
-#endif
 
-
-class Manager;
+class Handler;
 class Serializer;
 class ServerState;
 
 struct ConnectionData
 {
-  // Pointer to the associated buffer event
+  // Pointer to the connection owner
+  Handler* handler;
+
+  // Pointer to the associated bufferevent
   bufferevent* bufferEvent;
 
   // Addres of the client bound to the socket
@@ -31,8 +31,9 @@ struct ConnectionData
   // Message builder
   Serializer* serializer;
 
-  // The raw char stream being processed
-  char rawBuffer[ RAW_BUFFER_SIZE ];
+  // Input and output buffers
+  Buffer readBuffer;
+  Buffer writeBuffer;
 
   // Flag to trigger the destruction of the connection data
   bool close;

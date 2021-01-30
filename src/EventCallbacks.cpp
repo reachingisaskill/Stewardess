@@ -8,6 +8,8 @@
 #include "Handler.h"
 #include "Serializer.h"
 
+#include <cmath>
+
 
 void connectionUpdate( Connection* );
 
@@ -29,8 +31,11 @@ void listenerAcceptCB( evconnlistener* /*listener*/, evutil_socket_t new_socket,
   }
 
   // Choose a worker to handle it
-  // Testing, first one will do!
-  Handler* the_handler = data->threads.front();
+  Handler* the_handler = data->threads[ data->nextThread ];
+  if ( (++data->nextThread) == data->threads.size() )
+  {
+    data->nextThread = 0;
+  }
 
   // Lock the handler while we add a buffer event to the event_base
   UniqueLock lock( the_handler->mutex );
@@ -43,28 +48,30 @@ void listenerAcceptCB( evconnlistener* /*listener*/, evutil_socket_t new_socket,
 
   // Create the connection data
   ConnectionData* connectionData = new ConnectionData();
+  connectionData->handler = the_handler;
   connectionData->bufferEvent = buffer_event;
   connectionData->server = data->server;
   connectionData->serializer = data->server->buildSerializer();
+  connectionData->readBuffer.reserve( data->bufferSize );
+  connectionData->writeBuffer.reserve( data->bufferSize );
   connectionData->close = false;
 
+  // Byte-wise copy the address struct
   std::memcpy( (void*)&connectionData->socketAddress, (void*)address, address_length );
 
     
   // Make a connection object
   Connection* connection = new Connection( connectionData );
-
   // Add the new connection to the handler
   the_handler->connections[ connection->getIDNumber() ] = connection;
+  // Signal that something has connected
+  connectionData->server->onConnectionEvent( connection, ConnectionEvent::Connect );
 
-  // Set the call back functions for the buffer event and pass them a pointer to the connection object
-  bufferevent_setcb( buffer_event, bufferReadCB, bufferWriteCB, bufferEventCB, connection );
+  // Set the call back functions
+  bufferevent_setcb( buffer_event, bufferReadCB, bufferWriteCB, bufferEventCB, (void*)connection );
 
   // Set the time outs for reading & writing
   bufferevent_set_timeouts( buffer_event, &data->timeout, &data->timeout ); 
-
-  // Signal that something has connected
-  connectionData->server->onConnectionEvent( connection, ConnectionEvent::Connect );
 
   // Enable reading & writing on the buffer event
   bufferevent_enable( buffer_event, EV_READ|EV_WRITE );
@@ -95,7 +102,7 @@ void interruptSignalCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   std::cerr << "Interrupt received. Time to go." << std::endl;
 
   // Set the close flag on the handlers
-  for ( ThreadList::iterator it = data->threads.begin(); it != data->threads.end(); ++it )
+  for ( ThreadVector::iterator it = data->threads.begin(); it != data->threads.end(); ++it )
   {
     GuardLock lock( (*it)->mutex );
     event_base_loopexit( (*it)->eventBase, nullptr );
@@ -110,59 +117,70 @@ void workerTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
 {
   Handler* handler = (Handler*)arg;
 
-  std::cerr << "Worker timer received." << std::endl;
-
+  // Set the timeout time to the log of the number of connections
+  handler->timeout.tv_sec = 1 + std::log10( handler->connections.size() + 1 );
   event_add( handler->timeoutEvent, &handler->timeout);
+}
 
-//  event_del( handler->signalEvent );
+
+void workerKillCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
+{
+  Handler* handler = (Handler*)arg;
+
+  event_base_loopbreak( handler->eventBase );
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Buffer event callback functions
 
-void bufferReadCB( bufferevent* event, void* arg )
+void bufferReadCB( bufferevent* buffer_event, void* arg )
 {
   Connection* connection = (Connection*)arg;
   ConnectionData* connection_data = connection->getData();
-  Serializer* builder = connection_data->serializer;
+  Serializer* serializer = connection_data->serializer;
+  Buffer& buffer = connection_data->readBuffer;
   std::cout << "  Buffer Read called" << std::endl;
 
-  while( true )
+  int result;
+
+  while( connection->isOpen() )
   {
-    size_t count = bufferevent_read( event, connection_data->rawBuffer, sizeof( connection_data->rawBuffer ) );
+    result = bufferevent_read( buffer_event, buffer.data(), buffer.capacity() );
 
-    if ( count <= 0 )
+    std::cout << "Read " << result << std::endl;
+
+    if ( result <= 0 )
     {
-      // Error checking?
-
-      // No more data
+      buffer.resize( 0 );
       break;
     }
 
-    // Iterate through the characters
-    for ( size_t pos = 0; pos < count; ++pos )
+    buffer.resize( result );
+    serializer->deserialize( &buffer );
+
+    while( ! serializer->payloadEmpty() )
     {
-      // Push to the builder
-      builder->build( connection_data->rawBuffer[pos] );
-      // If there is a finished message
-      if ( builder->isBuilt() )
-      {
-        connection_data->server->onRead( builder->getPayload(), connection );
-      }
-
-      if ( builder->error() )
-      {
-        // builder->getError();
-      }
+      std::cout << "Triggering read event." << std::endl;
+      connection_data->server->onRead( serializer->getPayload(), connection );
     }
-  }
 
+    if ( ! connection->isOpen() ) break;
 
-  if ( builder->isBuilding() )
-  {
-    // Something clearly broke.
-    std::cout << "  ERROR Unfinished message" << std::endl;
+    while( ! serializer->errorEmpty() )
+    {
+      std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
+      connection_data->server->onConnectionEvent( connection, ConnectionEvent::Error );
+    }
+
+    if ( ! connection->isOpen() ) break;
+
+    while ( ! serializer->bufferEmpty() )
+    {
+      Buffer* buf = serializer->getBuffer();
+      bufferevent_write( buffer_event, buf->data(), buf->size() );
+      delete buf;
+    }
   }
 
   std::cout << "  Finished reading" << std::endl;
@@ -171,12 +189,27 @@ void bufferReadCB( bufferevent* event, void* arg )
 }
 
 
-void bufferWriteCB( bufferevent* /*event*/, void* data )
+void bufferWriteCB( bufferevent* buffer_event, void* data )
 {
   Connection* connection = (Connection*)data;
+  ConnectionData* connection_data = connection->getData();
+  Serializer* serializer = connection_data->serializer;
   std::cout << "  Buffer Write called" << std::endl;
 
-  // Nothing to do?
+  connection->getData()->server->onWrite( connection );
+
+  while( ! serializer->errorEmpty() )
+  {
+    std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
+    connection_data->server->onConnectionEvent( connection, ConnectionEvent::Error );
+  }
+
+  while ( ! serializer->bufferEmpty() )
+  {
+    Buffer* buf = serializer->getBuffer();
+    bufferevent_write( buffer_event, buf->data(), buf->size() );
+    delete buf;
+  }
 
   connectionUpdate( connection );
 }
@@ -230,7 +263,14 @@ void connectionUpdate( Connection* connection )
   if ( connection->_data->close )
   {
     std::cout << "  Closing Connection" << std::endl;
+
+    // Remove from the handler map
+    connection->_data->handler->connections.erase( connection->_data->handler->connections.find( connection->getIDNumber() ) );
+
+    // Free the associated buffer event
     bufferevent_free( connection->_data->bufferEvent );
+    
+    // Delete the data
     delete connection;
   }
 }

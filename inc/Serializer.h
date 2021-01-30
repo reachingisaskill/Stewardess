@@ -8,35 +8,59 @@ class Payload;
 
 class Serializer
 {
+  private:
+    // Queue of deserialized payloads
+    PayloadQueue _payloads;
+
+    // Queue of serialized payloads
+    BufferQueue _buffers;
+
+    // Queue of errors that occured
+    ErrorQueue _errors;
+
+
+  protected:
+    // Push a completed payload to the private buffer
+    void pushPayload( Payload* );
+
+    // Push a full character buffer (signal payload) to the internal queue
+    void pushBuffer( Buffer* );
+
+    // Push a char* pointer to the error queue
+    void pushError( const char* );
+
+
   public:
+    Serializer() {}
     virtual ~Serializer() {}
 
-    // Turns a payload into a message for writing
-    virtual void serialize( Payload* ) = 0;
+    // Turns a payload into a character buffer for writing
+    virtual void serialize( const Payload* ) = 0;
 
-    // Turns a payload into a message for writing
-    virtual const char* payloadBuffer() = 0;
+    // Turn a character buffer into payload
+    virtual void deserialize( const Buffer* ) = 0;
 
-    // Turns a payload into a message for writing
-    virtual size_t payloadBufferSize() = 0;
+
+    // Writes the internal buffer to the output buffer
+    Buffer* getBuffer();
+
+    // Return a flag to indicate there are write buffers ready to send
+    bool bufferEmpty() const;
+
 
     // Return a finished message
-    virtual Payload* getPayload() = 0;
-
-    // Return a flag to indicate that a message is half-built.
-    virtual bool isBuilding() const = 0;
+    Payload* getPayload();
 
     // Return a flag to state that a message is finished. Is called after each character is pushed.
-    virtual bool isBuilt() const = 0;
+    bool payloadEmpty() const;
 
-    // Push a character into the processing system
-    virtual void build( char ) = 0;
-
-    // Declares an error has happened
-    virtual bool error() const = 0;
 
     // Return an error string describing the error
-    virtual const char* getError() const = 0;
+    const char* getError();
+
+    // Declares an error has happened
+    bool errorEmpty() const;
+
 };
 
 #endif // SERIALIZER_BASE_H_

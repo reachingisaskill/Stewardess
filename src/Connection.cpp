@@ -39,6 +39,5 @@ void Connection::close() const
 void Connection::write( Payload* p ) const
 {
   _data->serializer->serialize( p );
-  bufferevent_write( _data->bufferEvent, _data->serializer->payloadBuffer(), _data->serializer->payloadBufferSize() );
 }
 

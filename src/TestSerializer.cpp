@@ -1,16 +1,17 @@
 
 #include "TestSerializer.h"
+#include "Buffer.h"
 
 #include <cstring>
 
 
+static const char* ErrorIncompletePayload = "New payload started before previous has finished.";
+static const char* ErrorUnexpectedData = "Unexpected data found between payloads.";
+
+
 TestSerializer::TestSerializer() :
-  _currentString(),
-  _buffer(),
-  _isBuilding( false ),
-  _isBuilt( false )
+  _currentPayload()
 {
-  _currentString.reserve( 4096 );
 }
 
 
@@ -19,57 +20,58 @@ TestSerializer::~TestSerializer()
 }
 
 
-void TestSerializer::serialize( Payload* p )
+void TestSerializer::serialize( const Payload* p )
 {
-  _buffer.clear();
-  std::string& message = ((TestPayload*)p)->getMessage();
-  std::copy( message.begin(), message.end(), std::back_inserter(_buffer) );
-}
+  const std::string& message = ((TestPayload*)p)->getMessage();
+  Buffer* buffer = new Buffer( message.size() );
 
-
-const char* TestSerializer::payloadBuffer()
-{
-  return &_buffer[0];
-}
-
-
-size_t TestSerializer::payloadBufferSize()
-{
-  return _buffer.size();
-}
-
-
-Payload* TestSerializer::getPayload()
-{
-  _isBuilt = false;
-  return new TestPayload( _currentString );
-}
-
-
-void TestSerializer::build( char c )
-{
-  if ( _isBuilding )
+  for ( size_t i = 0; i < message.size(); ++i )
   {
-    if ( c == '{' )
-    {
-      // ERROR...
-    }
-
-    _currentString.push_back( c );
-
-    if ( c == '}' )
-    {
-      _isBuilt = true;
-      _isBuilding = false;
-    }
+    buffer->push( message[i] );
   }
-  else
+
+  buffer->resize( message.size() );
+  std::cout << "Writing response" << std::endl;
+
+  this->pushBuffer( buffer );
+}
+
+
+void TestSerializer::deserialize( const Buffer* buffer )
+{
+  // Iterate through and break into messages
+  for ( Buffer::const_iterator it = buffer->begin(); it != buffer->end(); ++it )
   {
-    if ( c == '{' )
+    if ( _currentPayload.empty() )
     {
-      _currentString.clear();
-      _currentString.push_back( c );
-      _isBuilding = true;
+      if ( (*it) == '{' ) // Wait for the start of the message. Otherwise it is classed as garbage.
+      {
+        _currentPayload.clear();
+        _currentPayload.push_back( (*it) );
+      }
+      else
+      {
+        this->pushError( ErrorUnexpectedData );
+        std::cout << " THE ERROR = " << int( (*it ) );
+      }
+    }
+    else
+    {
+      if ( (*it) == '{' )
+      {
+        this->pushError( ErrorIncompletePayload );
+        _currentPayload.clear();
+        _currentPayload.push_back( (*it) );
+        continue;
+      }
+
+      _currentPayload.push_back( (*it) );
+
+      if ( (*it) == '}' )
+      {
+        this->pushPayload( new TestPayload( _currentPayload ) );
+        _currentPayload.clear();
+      }
     }
   }
 }
