@@ -23,14 +23,17 @@ TestSerializer::~TestSerializer()
 void TestSerializer::serialize( const Payload* p )
 {
   const std::string& message = ((TestPayload*)p)->getMessage();
-  Buffer* buffer = new Buffer( message.size() );
+  Buffer* buffer = new Buffer( message.size()+2 );
+  buffer->push( '{' );
 
   for ( size_t i = 0; i < message.size(); ++i )
   {
     buffer->push( message[i] );
   }
 
-  buffer->resize( message.size() );
+  buffer->push( '}' );
+
+  buffer->resize( message.size()+2 );
   std::cout << "Writing response" << std::endl;
 
   this->pushBuffer( buffer );
@@ -39,15 +42,16 @@ void TestSerializer::serialize( const Payload* p )
 
 void TestSerializer::deserialize( const Buffer* buffer )
 {
+  bool building = false;
   // Iterate through and break into messages
   for ( Buffer::const_iterator it = buffer->begin(); it != buffer->end(); ++it )
   {
-    if ( _currentPayload.empty() )
+    if ( ! building )
     {
       if ( (*it) == '{' ) // Wait for the start of the message. Otherwise it is classed as garbage.
       {
         _currentPayload.clear();
-        _currentPayload.push_back( (*it) );
+        building = true;
       }
       else
       {
@@ -61,16 +65,16 @@ void TestSerializer::deserialize( const Buffer* buffer )
       {
         this->pushError( ErrorIncompletePayload );
         _currentPayload.clear();
-        _currentPayload.push_back( (*it) );
-        continue;
       }
-
-      _currentPayload.push_back( (*it) );
-
-      if ( (*it) == '}' )
+      else if ( (*it) == '}' )
       {
         this->pushPayload( new TestPayload( _currentPayload ) );
         _currentPayload.clear();
+        building = false;
+      }
+      else
+      {
+        _currentPayload.push_back( (*it) );
       }
     }
   }

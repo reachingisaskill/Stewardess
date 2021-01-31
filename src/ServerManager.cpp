@@ -1,76 +1,37 @@
 
-#include "Manager.h"
+#include "ServerManager.h"
 #include "ManagerData.h"
 #include "Handler.h"
 #include "EventCallbacks.h"
-#include "ServerState.h"
+#include "CallbackInterface.h"
 
 #include <csignal>
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Static variables
+// ServerManager Member Functions
 
-size_t Manager::_instanceCount = 0;
-std::mutex Manager::_instanceCountMutex;
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Manager Member Functions
-
-Manager::Manager( int port_number ) :
-  _data( nullptr )
+ServerManager::ServerManager( int port_number ) :
+  ManagerBase()
 {
-  std::lock_guard<std::mutex> lock( _instanceCountMutex );
-  _instanceCount += 1;
-
-  _data = new ManagerData();
-  _data->owner = this;
-  _data->server = nullptr;
-  _data->numThreads = 2;
-  _data->nextThread = 0;
-  _data->bufferSize = 4096;
-  _data->threads.reserve( _data->numThreads );
-
-  std::memset( &_data->socketAddress, 0, sizeof( _data->socketAddress ) );
-  _data->socketAddress.sin_family = AF_INET;
-  _data->socketAddress.sin_addr.s_addr = INADDR_ANY;
-  _data->socketAddress.sin_port = htons( port_number );
+  _data->portNumber = port_number;
 }
 
 
-Manager::~Manager()
+ServerManager::~ServerManager()
 {
-  if ( _data != nullptr )
-    delete _data;
-
-  std::lock_guard<std::mutex> lock( _instanceCountMutex );
-  if ( (--_instanceCount) == 0 )
-  {
-    std::cout << "No more managers. Global libevent shutdown." << std::endl;
-    libevent_global_shutdown();
-  }
 }
 
 
-void Manager::setNumberThreads( unsigned n )
-{
-  if ( n == 0 )
-  {
-    std::cerr << "Number of threads must be at least 1" << std::endl;
-    _data->numThreads = 1;
-  }
-  else
-  {
-    _data->numThreads = n;
-  }
-}
-
-
-void Manager::run( ServerState& server )
+void ServerManager::_run( CallbackInterface& server )
 {
   // Set the server pointer
   _data->server = &server;
+
+  // Configure the socket details
+  _data->socketAddress.sin_family = AF_INET;
+  _data->socketAddress.sin_addr.s_addr = INADDR_ANY;
+  _data->socketAddress.sin_port = htons( _data->portNumber );
 
   // Configure the event base.
   std::cout << "Creating event_base" << std::endl;
@@ -89,6 +50,17 @@ void Manager::run( ServerState& server )
     throw std::runtime_error( "Could not bind a listener to the requested socket." );
   }
 
+  char address_string[16];
+  evutil_inet_ntop( _data->socketAddress.sin_family, &_data->socketAddress.sin_addr, address_string, 16 );
+  std::cout << "Bound server to socket. IP Address : " << address_string << std::endl;
+
+  // Create an event to force shutdown, but don't enable it
+  _data->deathEvent = evtimer_new( _data->eventBase, killTimerCB, (void*)_data );
+  if ( _data->deathEvent == nullptr )
+  {
+    throw std::runtime_error( "Could not create the death event to the requested socket." );
+  }
+
   // Set the error call back function on the listener
   evconnlistener_set_error_cb( _data->listener, listenerErrorCB );
 
@@ -101,9 +73,12 @@ void Manager::run( ServerState& server )
   std::cout << "Intialising workers." << std::endl;
   for ( unsigned int i = 0; i < _data->numThreads; ++i )
   {
-    Handler* new_handler = new Handler();
-    new_handler->theThread = std::thread( handlerThread, new_handler );
-    _data->threads.push_back( new_handler );
+    ThreadWrapper* wrapper = new ThreadWrapper();
+    wrapper->theHandler.eventBase = nullptr;
+    wrapper->theHandler.timeoutEvent = nullptr;
+    wrapper->theHandler.timeoutModifier = _data->tickTimeModifier;
+    wrapper->theThread = std::thread( handlerThread, &wrapper->theHandler );
+    _data->threads.push_back( wrapper );
   }
 
 
@@ -122,21 +97,9 @@ void Manager::run( ServerState& server )
   }
 
   std::cout << "Freeing events" << std::endl;
+  event_free( _data->deathEvent );
   event_free( _data->signalEvent );
   evconnlistener_free( _data->listener );
   event_base_free( _data->eventBase );
-}
-
-
-ServerState& Manager::getServerState() const
-{
-  if ( _data->server == nullptr )
-  {
-    throw std::runtime_error( "Server is not running. Cannot access server state." );
-  }
-  else
-  {
-    return *_data->server;
-  }
 }
 

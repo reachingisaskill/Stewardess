@@ -6,22 +6,34 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Declare the listener call back and dispatch functions
+// Declare the listener callback functions
 
 void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
 void listenerErrorCB( evconnlistener*, void* );
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Signal call back functions
+// Declare the client callback functions
 
-void interruptSignalCB( evutil_socket_t, short, void* );
-void workerTimerCB( evutil_socket_t, short, void* );
-void workerKillCB( evutil_socket_t, short, void* );
+void clientInterruptSignalCB( evutil_socket_t, short, void* );
+void clientKillTimerCB( evutil_socket_t, short, void* );
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Declare the bufferevent call back and dispatch functions
+// Server call back functions
+
+void interruptSignalCB( evutil_socket_t, short, void* );
+void killTimerCB( evutil_socket_t, short, void* );
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Worker thread call back functions
+
+void workerTimerCB( evutil_socket_t, short, void* );
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Declare the bufferevent call back functions
 
 void bufferReadCB( bufferevent*, void* );
 void bufferWriteCB( bufferevent*, void* );

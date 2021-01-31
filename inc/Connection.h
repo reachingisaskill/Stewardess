@@ -34,7 +34,7 @@ class Connection
     size_t getIDNumber() const { return _idNumber; }
 
     // Returns true if the connection is still alive
-    bool isOpen() const { return _data != nullptr; }
+    bool isOpen() const;
 
 
     // Force the connection to close at the end of the current exectution

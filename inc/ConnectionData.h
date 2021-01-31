@@ -12,13 +12,10 @@
 
 class Handler;
 class Serializer;
-class ServerState;
+class CallbackInterface;
 
 struct ConnectionData
 {
-  // Pointer to the connection owner
-  Handler* handler;
-
   // Pointer to the associated bufferevent
   bufferevent* bufferEvent;
 
@@ -26,7 +23,7 @@ struct ConnectionData
   sockaddr_in socketAddress;
 
   // Pointer to the server receiving the callbacks
-  ServerState* server;
+  CallbackInterface* server;
 
   // Message builder
   Serializer* serializer;

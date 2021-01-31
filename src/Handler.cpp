@@ -6,9 +6,6 @@
 #include <csignal>
 
 
-#define HANDLER_LOOP_TIME { 2, 0 }
-
-
 void handlerThread( Handler* handler )
 {
   handler->eventBase = event_base_new();
@@ -17,10 +14,7 @@ void handlerThread( Handler* handler )
     throw std::runtime_error( "Could not create a base event. Unknow error." );
   }
 
-
-  // Configure some sort of user event to trigger a closing of connections...
-
-  handler->timeout = HANDLER_LOOP_TIME;
+  handler->timeout = defaultTickTime;
   handler->timeoutEvent = evtimer_new( handler->eventBase, workerTimerCB, (void*)handler );
   evtimer_add( handler->timeoutEvent, &handler->timeout );
 

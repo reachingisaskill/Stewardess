@@ -6,25 +6,29 @@
 #include <event2/event.h>
 
 
+/*
+ * This structure stores a reference to all the events assigned to the event_base looping on a given thread
+ */
 struct Handler
 {
-  // Control access to this handler
-  std::mutex mutex;
-
-  // The actual thread handle
-  std::thread theThread;
-
   // Pointer to the event base for this worker thread
   event_base* eventBase;
 
-  // Pointer to a signal event to allow us to close down safely
+  // Pointer to the timeout event that triggers an internal tick event
   event* timeoutEvent;
 
   // How long the timeout lasts for 
   timeval timeout;
 
-  // Map of the connections that this thread oversees
-  ConnectionMap connections;
+  // Make the timeout x times longer
+  float timeoutModifier;
+};
+
+
+struct ThreadWrapper
+{
+  std::thread theThread;
+  Handler theHandler;
 };
 
 

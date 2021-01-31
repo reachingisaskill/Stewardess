@@ -30,6 +30,12 @@ ConnectionData* Connection::getData()
 }
 
 
+bool Connection::isOpen() const
+{
+  return (_data != nullptr) && (!_data->close);
+}
+
+
 void Connection::close() const
 {
   _data->close = true;

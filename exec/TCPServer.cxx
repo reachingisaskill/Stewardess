@@ -1,7 +1,7 @@
 
 #define PORT_NUMBER 7007
 
-#include "Manager.h"
+#include "ServerManager.h"
 #include "TestServer.h"
 
 #include <exception>
@@ -13,7 +13,7 @@
 int main( int, char** )
 {
   std::cout << "Building manager" << std::endl;
-  Manager the_manager( PORT_NUMBER );
+  ServerManager the_manager( PORT_NUMBER );
 
   std::cout << "Building server" << std::endl;
   TestServer the_server;

@@ -13,11 +13,16 @@
 #include <iostream>
 
 
+
+// The default time for the internal tick rate of the server
+const timeval defaultTickTime = { 2, 0 };
+
+
 class Connection;
 class Handler;
 class Payload;
-class BufferData;
 class Buffer;
+class ThreadWrapper;
 
 // Serialization structures
 typedef std::queue< Buffer* > BufferQueue;
@@ -29,7 +34,8 @@ typedef std::time_t TimeStamp;
 
 // Common arry-like structures
 typedef std::map< size_t, Connection* > ConnectionMap;
-typedef std::vector< Handler* > ThreadVector;
+typedef std::queue< Connection* > ConnectionQueue;
+typedef std::vector< ThreadWrapper* > ThreadVector;
 
 // Short hands for mutex locks
 typedef std::unique_lock<std::mutex> UniqueLock;
