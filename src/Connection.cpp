@@ -1,49 +1,50 @@
 
 #include "Connection.h"
-#include "ConnectionData.h"
-#include "Payload.h"
-#include "Serializer.h"
 
 
-size_t Connection::_counter = 0;
+UniqueID Connection::_idCounter;
+std::mutex _idCounterMutex;
 
 
-Connection::Connection( ConnectionData* d ) :
-  _data( d ),
-  _idNumber( _counter++ )
+Connection::Connection() :
+  _references(),
+  _identifier( 0 ),
+  _close( false ),
+  bufferEvent( nullptr ),
+  socketAddress(),
+  server( nullptr ),
+  serializer( nullptr ),
+  readBuffer()
 {
+  GuardLock lk( _idCounterMutex );
+  _identifier = _idCounter++;
 }
 
 
-Connection::~Connection()
+void Connection::close()
 {
-  if ( _data != nullptr )
-  {
-    delete _data->serializer;
-    delete _data;
-  }
-}
-
-ConnectionData* Connection::getData()
-{
-  return _data;
+  GuardLock lk( _closeMutex );
+  _close = false;
 }
 
 
-bool Connection::isOpen() const
+bool Connection::isOpen()
 {
-  return (_data != nullptr) && (!_data->close);
+  GuardLock lk( _closeMutex );
+  return !_close;
 }
 
 
-void Connection::close() const
+Handle Connection::requestHandle()
 {
-  _data->close = true;
+  return Handle( _references, this );
 }
 
 
-void Connection::write( Payload* p ) const
+size_t Connection::getNumberHandles() const
 {
-  _data->serializer->serialize( p );
+  return _references.getNumber();
 }
+
+
 

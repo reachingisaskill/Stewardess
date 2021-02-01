@@ -4,18 +4,21 @@
 
 void Serializer::pushPayload( Payload* p )
 {
+  GuardLock lk( _payloadMutex );
   _payloads.push( p );
 }
 
 
 void Serializer::pushBuffer( Buffer* b )
 {
+  GuardLock lk( _bufferMutex );
   _buffers.push( b );
 }
 
 
 void Serializer::pushError( const char* e )
 {
+  GuardLock lk( _errorMutex );
   _errors.push( e );
 }
 

@@ -10,15 +10,22 @@
 
 int main( int, char** )
 {
-  std::cout << "Building manager" << std::endl;
-  ClientManager the_manager( HOST_ADDRESS, PORT_NUMBER );
+  std::cout << "Building Config" << std::endl;
+  Configuration config( PORT_NUMBER );
 
-  the_manager.setReadTimeout( 0 );
+  // Configure the config
+  config.setNumberThreads( 1 );
+  config.setDefaultBufferSize( 4096 );
+  config.setReadTimeout( 0 );
+  config.setWriteTimeout( 3 );
+  config.setTickTimeModifier( 1.0 );
+  config.setCloseConnectionsOnShutdown( true );
+
 
   std::cout << "Building server" << std::endl;
   TestClient the_client;
 
-  the_manager.run( the_client );
+  config.run( the_client );
 
   return 0;
 }

@@ -19,10 +19,9 @@ const timeval defaultTickTime = { 2, 0 };
 
 
 class Connection;
-class Handler;
 class Payload;
 class Buffer;
-class ThreadWrapper;
+class ThreadInfo;
 
 // Serialization structures
 typedef std::queue< Buffer* > BufferQueue;
@@ -32,10 +31,13 @@ typedef std::queue< const char* > ErrorQueue;
 // Prefered time stamp data type
 typedef std::time_t TimeStamp;
 
+// Really big unique id type
+typedef long long unsigned int UniqueID;
+
 // Common arry-like structures
 typedef std::map< size_t, Connection* > ConnectionMap;
-typedef std::queue< Connection* > ConnectionQueue;
-typedef std::vector< ThreadWrapper* > ThreadVector;
+typedef std::list< Connection* > ConnectionList;
+typedef std::vector< ThreadInfo* > ThreadVector;
 
 // Short hands for mutex locks
 typedef std::unique_lock<std::mutex> UniqueLock;

@@ -3,27 +3,24 @@
 #define CALLBACK_INTERFACE_H_
 
 #include "Definitions.h"
+#include "Handle.h"
 
 
 class Payload;
 class Serializer;
-class Connection;
-class ManagerData;
+class Manager;
 
 class CallbackInterface
 {
   // Manager base is a friend so that it can store a pointer to the data here
-  friend class ManagerBase;
+  friend class Manager;
 
   private:
-    ManagerData* _managerData;
+    Manager* _manager;
 
   protected:
-    // Attempts to searche for a connection, returns nullptr if the connection has closed
-    Connection* requestConnection( size_t );
-
-    // Returns the number of active connections
-    size_t getNumberConnections() const;
+    // Return a reference to the manager
+    Manager& manager() { return *_manager; }
 
 
   public:
@@ -35,20 +32,28 @@ class CallbackInterface
     virtual Serializer* buildSerializer() const = 0;
 
 
+    // Called when the server first starts for initialisation functions
+    virtual void onStart() {}
+
+
+    // Called immediately after the server stops for cleanup
+    virtual void onStop() {}
+
+
     // Called when a read event is triggered.
-    virtual void onRead( Payload*, const Connection* ) {}
+    virtual void onRead( Handle, Payload* ) {}
 
 
     // Called when a write event is triggered
-    virtual void onWrite( const Connection* ) {}
+    virtual void onWrite( Handle ) {}
 
 
     // Called when a new connection is added
-    virtual void onConnect( const Connection* ) {}
+    virtual void onConnect( Handle ) {}
 
 
     // Called when a connection event occurs
-    virtual void onConnectionEvent( const Connection*, ConnectionEvent ) {}
+    virtual void onConnectionEvent( Handle, ConnectionEvent ) {}
 
 
     // Called when a server event occurs

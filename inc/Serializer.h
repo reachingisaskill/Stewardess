@@ -3,6 +3,7 @@
 #define SERIALIZER_BASE_H_
 
 #include "Definitions.h"
+#include <mutex>
 
 class Payload;
 
@@ -11,12 +12,15 @@ class Serializer
   private:
     // Queue of deserialized payloads
     PayloadQueue _payloads;
+    std::mutex _payloadMutex;
 
     // Queue of serialized payloads
     BufferQueue _buffers;
+    std::mutex _bufferMutex;
 
     // Queue of errors that occured
     ErrorQueue _errors;
+    std::mutex _errorMutex;
 
 
   protected:

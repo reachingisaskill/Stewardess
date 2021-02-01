@@ -13,23 +13,11 @@ void listenerErrorCB( evconnlistener*, void* );
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Declare the client callback functions
-
-void clientInterruptSignalCB( evutil_socket_t, short, void* );
-void clientKillTimerCB( evutil_socket_t, short, void* );
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Server call back functions
 
 void interruptSignalCB( evutil_socket_t, short, void* );
 void killTimerCB( evutil_socket_t, short, void* );
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Worker thread call back functions
-
-void workerTimerCB( evutil_socket_t, short, void* );
+void tickTimerCB( evutil_socket_t, short, void* );
 
 
 ////////////////////////////////////////////////////////////////////////////////
