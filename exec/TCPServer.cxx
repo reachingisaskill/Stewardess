@@ -1,6 +1,7 @@
 
 #define PORT_NUMBER 7007
 
+#include "Manager.h"
 #include "Configuration.h"
 #include "TestServer.h"
 
@@ -28,7 +29,10 @@ int main( int, char** )
   std::cout << "Building server" << std::endl;
   TestServer the_server;
 
-  config.run( the_server );
+
+  Manager manager( config, the_server );
+
+  manager.run();
 
   return 0;
 }

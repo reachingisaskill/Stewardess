@@ -8,14 +8,20 @@ TestClient::TestClient() :
 }
 
 
-void TestClient::onRead( Payload* p, const Connection* c )
+void TestClient::onStart()
 {
-  std::cout << "RECEIVED: From connection: " << c->getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
+  manager().connectTo( "0.0.0.0", "7007" );
+}
+
+
+void TestClient::onRead( Handle c, Payload* p )
+{
+  std::cout << "RECEIVED: From connection: " << c.getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
   delete p;
 }
 
 
-void TestClient::onConnectionEvent( const Connection* connection, ConnectionEvent event )
+void TestClient::onConnectionEvent( Handle connection, ConnectionEvent event )
 {
   switch( event )
   {
@@ -24,7 +30,7 @@ void TestClient::onConnectionEvent( const Connection* connection, ConnectionEven
       std::cout << "Connection Event" << std::endl;
 
       TestPayload p( "Hello" );
-      connection->write( &p );
+      connection.write( &p );
     }
     break;
 

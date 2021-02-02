@@ -4,6 +4,7 @@
 
 #include "Definitions.h"
 #include "Handle.h"
+#include "Manager.h"
 
 
 class Payload;

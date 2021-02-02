@@ -35,6 +35,9 @@ class Connection
 
     // Create a new connection and aquire a new id.
     Connection();
+    
+    // Destroy buffer event
+    ~Connection();
 
     // Connections are not copyable/moveable after construction
     Connection( const Connection& ) = delete;

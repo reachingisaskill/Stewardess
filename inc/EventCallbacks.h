@@ -19,6 +19,8 @@ void interruptSignalCB( evutil_socket_t, short, void* );
 void killTimerCB( evutil_socket_t, short, void* );
 void tickTimerCB( evutil_socket_t, short, void* );
 
+void workerTickTimerCB( evutil_socket_t, short, void* );
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Declare the bufferevent call back functions

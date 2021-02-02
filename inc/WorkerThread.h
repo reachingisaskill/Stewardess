@@ -3,11 +3,14 @@
 #define WORKER_THREAD_H_
 
 #include "Definitions.h"
+#include "LibeventIncludes.h"
 
 
 struct WorkerData
 {
   event_base* eventBase;
+  event* tickEvent;
+  timeval tickTime;
 };
 
 
@@ -19,7 +22,7 @@ struct ThreadInfo
 };
 
 
-void workerThread( WorkerData& );
+void workerThread( WorkerData );
 
 
 #endif // WORKER_THREAD_H_

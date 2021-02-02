@@ -3,8 +3,10 @@
 #include "CallbackInterface.h"
 #include "EventCallbacks.h"
 #include "WorkerThread.h"
+#include "Connection.h"
 
 #include <cstring>
+#include <cmath>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -137,13 +139,22 @@ void Manager::run()
     for ( unsigned int i = 0; i < _configuration.numThreads; ++i )
     {
       ThreadInfo* info = new ThreadInfo();
+      info->data.tickTime = _configuration.workerTickTime;
 
       info->data.eventBase = event_base_new();
       if ( info->data.eventBase == nullptr )
       {
         throw std::runtime_error( "Could not create a worker event base. Unknowm error." );
       }
-      info->theThread = std::thread( workerThread, info->data.eventBase );
+
+      info->data.tickEvent = evtimer_new( info->data.eventBase, workerTickTimerCB, &info->data );
+      if ( info->data.tickEvent == nullptr )
+      {
+        throw std::runtime_error( "Could not create the worker tick event." );
+      }
+      event_add( info->data.tickEvent, &info->data.tickTime );
+
+      info->theThread = std::thread( workerThread, info->data );
       _threads.push_back( info );
     }
 
@@ -165,7 +176,22 @@ void Manager::run()
 
     // Start the libevent loop using the base event
     std::cout << "Dispatching primary event" << std::endl;
+    _server.onStart();
     event_base_dispatch( _eventBase );
+    _server.onStop();
+
+    // Delete all the outstanding connections
+    for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
+    {
+      delete (*it);
+    }
+    _closedConnections.clear();
+
+    for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
+    {
+      delete it->second;
+    }
+    _connections.clear();
 
 
     // Join all the worker threads.
@@ -173,6 +199,7 @@ void Manager::run()
     for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
     {
       (*it)->theThread.join();
+      event_free( (*it)->data.tickEvent );
       event_base_free( (*it)->data.eventBase );
       delete (*it);
     }
@@ -209,19 +236,25 @@ Handle Manager::connectTo( std::string host, std::string port )
 
 
   // Resolve the hostname
-  int result = evutil_getaddrinfo( _data->clientAddress.c_str(), port_buffer, &address_hints, &address_answer );
+  int result = evutil_getaddrinfo( host.c_str(), port.c_str(), &address_hints, &address_answer );
   if ( result != 0 )
   {
-    std::cerr << "Could not resolve hostname";
-    return;
+    std::cerr << "Could not resolve hostname" << std::endl;
+    return Handle();
   }
 
   // Request a socket
   evutil_socket_t new_socket = socket( address_answer->ai_family, address_answer->ai_socktype, address_answer->ai_protocol );
   if ( new_socket < 0 )
   {
-    free( address_answer );
-    throw std::runtime_error( "Could not create a socket" );
+    while( address_answer != nullptr )
+    {
+      evutil_addrinfo* temp = address_answer->ai_next;
+      free( address_answer );
+      address_answer = temp;
+    }
+    std::cerr << "Could not create a socket" << std::endl;
+    return Handle();
   }
 
   // Try to connect to the remote host
@@ -229,14 +262,76 @@ Handle Manager::connectTo( std::string host, std::string port )
   if ( connect( new_socket, address_answer->ai_addr, address_answer->ai_addrlen ) )
   {
     EVUTIL_CLOSESOCKET( new_socket );
-    free( address_answer );
-    std::cerr << "Failed to connect to server";
-    return;
+    while( address_answer != nullptr )
+    {
+      evutil_addrinfo* temp = address_answer->ai_next;
+      free( address_answer );
+      address_answer = temp;
+    }
+    std::cerr << "Failed to connect to server" << std::endl;
+    return Handle();
   }
+
+  event_base* worker_base = _threads[ this->getNextThread() ]->data.eventBase;
+
+  // Create a buffer event, bound to the tcp socket. When freed it will close the socket.
+  bufferevent* buffer_event = bufferevent_socket_new( worker_base, new_socket, BEV_OPT_CLOSE_ON_FREE );
+
+  // Create the connection 
+  Connection* connection = new Connection();
+  connection->bufferEvent = buffer_event;
+  connection->server = &_server;
+  connection->serializer = _server.buildSerializer();
+  connection->readBuffer.reserve( _configuration.bufferSize );
+
+  // Byte-wise copy the address struct
+  std::memcpy( (void*)&connection->socketAddress, (void*)address_answer->ai_addr, address_answer->ai_addrlen );
+
+  // Clear the address memory
+  while( address_answer != nullptr )
+  {
+    evutil_addrinfo* temp = address_answer->ai_next;
+    free( address_answer );
+    address_answer = temp;
+  }
+
+    
+  // Add the new connection to the manager
+  this->addConnection( connection );
+
+  // Signal that something has connected
+  connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
+
+
+  // Set the call back functions
+  bufferevent_setcb( buffer_event, bufferReadCB, bufferWriteCB, bufferEventCB, (void*)connection );
+
+  // Set the time outs for reading & writing only if they're > 0
+  bufferevent_set_timeouts( buffer_event, this->getReadTimeout(), this->getWriteTimeout() ); 
+
+  // Enable reading & writing on the buffer event
+  bufferevent_enable( buffer_event, EV_READ|EV_WRITE );
+
+  // Return the handle
+  return connection->requestHandle();
 }
 
 
-timeval* Manager::getReadTimeout()
+size_t Manager::getNextThread()
+{
+  GuardLock lk( _nextThreadMutex );
+
+  size_t result = _nextThread++;
+  if ( _nextThread == _threads.size() )
+  {
+    _nextThread = 0;
+  }
+
+  return result;
+}
+
+
+const timeval* Manager::getReadTimeout() const
 {
   if ( _configuration.readTimeout.tv_sec == 0 )
   {
@@ -249,7 +344,7 @@ timeval* Manager::getReadTimeout()
 }
 
 
-timeval* Manager::getWriteTimeout()
+const timeval* Manager::getWriteTimeout() const
 {
   if ( _configuration.writeTimeout.tv_sec == 0 )
   {
@@ -266,11 +361,11 @@ timeval* Manager::getTickTime()
 {
   size_t num;
   {
-    GuardLock lk( _manager._connectionsMutex );
-    num = _manager._connections.size();
+    GuardLock lk( _connectionsMutex );
+    num = _connections.size();
   }
 
-  _tickTime.tv_sec = _manager.configuration.minTickTime + _manager._tickModifier * ( std::log10( num + 1 ) );
+  _tickTime.tv_sec = _configuration.minTickTime + _configuration.tickTimeModifier * ( std::log10( num + 1 ) );
 
   std::cout << "TICK " << _tickTime.tv_sec;
 
@@ -280,12 +375,12 @@ timeval* Manager::getTickTime()
 
 void Manager::addConnection( Connection* connection )
 {
-  GuardLock lk( _manager->_connectionsMutex );
-  _manager->_connections[ connection->getIdentifier() ] = connection;
+  GuardLock lk( _connectionsMutex );
+  _connections[ connection->getIdentifier() ] = connection;
 }
 
 
-void Manager::closeConnection( Connction* connection )
+void Manager::closeConnection( Connection* connection )
 {
   // Mark the flag
   connection->close();
@@ -302,22 +397,22 @@ void Manager::closeConnection( Connction* connection )
 
   // Push it to the closed list
   {
-    GuardLock lk( _closedConnections );
+    GuardLock lk( _closedConnectionsMutex );
     _closedConnections.push_back( connection );
   }
 }
 
 
-void Manager::closeAllConnections()
-{
-  GuardLock lk( _manager._connectionsMutex );
-
-  ConnectionMap::iterator it = _manager._connections.begin();
-  while( it != _manager._connections.end() )
-  {
-    (*it)->close = true;
-  }
-}
+//void Manager::closeAllConnections()
+//{
+//  GuardLock lk( _manager._connectionsMutex );
+//
+//  ConnectionMap::iterator it = _manager._connections.begin();
+//  while( it != _manager._connections.end() )
+//  {
+//    (*it)->close = true;
+//  }
+//}
 
 
 void Manager::cleanupClosedConnections()

@@ -21,16 +21,20 @@ class TestClient : public CallbackInterface
     virtual Serializer* buildSerializer() const override { return new TestSerializer(); }
 
 
-    // Called when a read event is triggered.
-    virtual void onRead( Payload*, const Connection* ) override;
+    // Called when the server first starts for initialisation functions
+    virtual void onStart() override;
 
 
     // Called when a read event is triggered.
-    virtual void onWrite( const Connection* ) override {}
+    virtual void onRead( Handle, Payload* ) override;
+
+
+    // Called when a read event is triggered.
+    virtual void onWrite( Handle ) override {}
 
 
     // Called when a connection event occurs
-    virtual void onConnectionEvent( const Connection*, ConnectionEvent ) override;
+    virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
 
 
     virtual void onTick( int ) override {}

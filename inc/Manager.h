@@ -62,7 +62,7 @@ class Manager
     sockaddr_in _socketAddress;
   
     // The socket we're listening on
-    evutil_socket_t socket;
+    evutil_socket_t _socket;
 
 
     // How long the timeout lasts for the next 'tick'
@@ -74,15 +74,20 @@ class Manager
 
     // The next thread to allocate a connection to
     size_t _nextThread;
+    std::mutex _nextThreadMutex;
 
 
 
     // Anything that's not null gets free'd
     void _cleanup();
 
+
+    // Update and return the next thread index
+    size_t getNextThread();
+
     // Return appropriate pointers for the read and write timeouts
-    timeval* getReadTimeout() const;
-    timeval* getWriteTimeout() const;
+    const timeval* getReadTimeout() const;
+    const timeval* getWriteTimeout() const;
 
     // Add a newly created connection to the map
     void addConnection( Connection* );

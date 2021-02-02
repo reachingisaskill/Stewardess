@@ -2,7 +2,8 @@
 #define PORT_NUMBER 7007
 #define HOST_ADDRESS "0.0.0.0"
 
-#include "ClientManager.h"
+#include "Manager.h"
+#include "Configuration.h"
 #include "TestClient.h"
 
 #include <iostream>
@@ -25,7 +26,10 @@ int main( int, char** )
   std::cout << "Building server" << std::endl;
   TestClient the_client;
 
-  config.run( the_client );
+
+  Manager manager( config, the_client );
+
+  manager.run();
 
   return 0;
 }

@@ -1,11 +1,8 @@
 
 #include "WorkerThread.h"
-#include "EventCallbacks.h"
-#include "Connection.h"
-#include "ConnectionData.h"
 
 
-void handlerThread( WorkerData& worker_data );
+void workerThread( WorkerData worker_data )
 {
   // Start the libevent loop using the base event
   std::cout << "Configured worker. Dispatching." << std::endl;

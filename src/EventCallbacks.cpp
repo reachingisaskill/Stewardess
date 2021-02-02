@@ -20,11 +20,7 @@ void listenerAcceptCB( evconnlistener* /*listener*/, evutil_socket_t new_socket,
   std::cout << "  Listener Accept Called " << std::endl;
 
   // Choose a worker to handle it
-  event_base* worker_base = data->_threads[ data->_nextThread ]->data.eventBase;
-  if ( (++data->_nextThread) == data->_threads.size() )
-  {
-    data->_nextThread = 0;
-  }
+  event_base* worker_base = data->_threads[ data->getNextThread() ]->data.eventBase;
 
   // Create a buffer event, bound to the tcp socket. When freed it will close the socket.
   bufferevent* buffer_event = bufferevent_socket_new( worker_base, new_socket, BEV_OPT_CLOSE_ON_FREE );
@@ -127,6 +123,13 @@ void tickTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   event_add( data->_tickEvent, data->getTickTime() );
 }
 
+
+void workerTickTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
+{
+  WorkerData* data = (WorkerData*)arg;
+  event_add( data->tickEvent, &data->tickTime );
+  // Do nothing. We just need to force libevent to loop around again
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Buffer event callback functions

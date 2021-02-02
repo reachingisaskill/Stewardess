@@ -10,6 +10,9 @@ struct ConfigurationData
   // The port number we want
   int portNumber;
 
+  // How often the worker event base forces a tick
+  timeval workerTickTime;
+
   // The minimum time between ticks
   int minTickTime;
 

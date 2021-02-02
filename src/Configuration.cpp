@@ -6,6 +6,16 @@ Configuration::Configuration( int p ) :
   _data()
 {
   _data.portNumber = p;
+  _data.workerTickTime = { 1, 0 };
+  _data.minTickTime = 1;
+  _data.tickTimeModifier = 1.0;
+  _data.readTimeout = { 3, 0 };
+  _data.writeTimeout = { 3, 0 };
+  _data.deathTime = { 5, 0 };
+  _data.connectionCloseOnShutdown = true;
+  _data.bufferSize = 4096;
+  _data.numThreads = 2;
+  _data.requestListener = false;
 }
 
 

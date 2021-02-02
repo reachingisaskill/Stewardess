@@ -17,11 +17,11 @@ class TestServer : public CallbackInterface
 
 
     // Called when a read event is triggered.
-    virtual void onRead( Payload*, const Connection* ) override;
+    virtual void onRead( Handle, Payload* ) override;
 
 
     // Called when a connection event occurs
-    virtual void onConnectionEvent( const Connection*, ConnectionEvent ) override;
+    virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
 
 };
 

@@ -1,9 +1,10 @@
 
 #include "Connection.h"
+#include "Serializer.h"
 
 
 UniqueID Connection::_idCounter;
-std::mutex _idCounterMutex;
+std::mutex Connection::_idCounterMutex;
 
 
 Connection::Connection() :
@@ -18,6 +19,15 @@ Connection::Connection() :
 {
   GuardLock lk( _idCounterMutex );
   _identifier = _idCounter++;
+}
+
+
+Connection::~Connection()
+{
+  if ( bufferEvent != nullptr )
+    bufferevent_free( bufferEvent );
+  if ( serializer != nullptr )
+    delete serializer;
 }
 
 
