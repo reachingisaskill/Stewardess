@@ -31,6 +31,14 @@ class Connection
     bool _close;
     std::mutex _closeMutex;
 
+
+    // Time of creation
+    TimeStamp _connectionTime;
+
+    // Last time someone sent/received through this connection
+    TimeStamp _lastAccess;
+    mutable std::mutex _lastAccessMutex;
+
   public:
 
     // Create a new connection and aquire a new id.
@@ -77,6 +85,15 @@ class Connection
 
     // Returns the number of handles still alive
     size_t getNumberHandles() const;
+
+    // Return the time the connection was opened
+    TimeStamp getCreationTime() const;
+
+    // Signal that an access was made.
+    void touchAccess();
+
+    // Return the last time it was accessed
+    TimeStamp getAccess() const;
 
 };
 

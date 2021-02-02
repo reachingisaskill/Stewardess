@@ -68,6 +68,14 @@ class Handle
     void write( Payload* ) const;
 
 
+    // Return the timestamp when the connection was opened
+    TimeStamp creationTime() const;
+
+
+    // Return the last access
+    TimeStamp lastAccess() const;
+
+
     // Returns false for a dead connection
     operator bool() { return _data != nullptr; }
 };

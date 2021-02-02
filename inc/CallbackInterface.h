@@ -62,7 +62,7 @@ class CallbackInterface
 
 
     // Called on every server 'tick'
-    virtual void onTick( int ) {}
+    virtual void onTick( Milliseconds ) {}
 
 };
 

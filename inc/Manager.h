@@ -32,6 +32,9 @@ class Manager
     // The server pointer
     CallbackInterface& _server;
 
+    // Flag to crash out before server starts
+    bool _abort;
+
 
     // Map of all the connections currently with the process
     ConnectionMap _connections;
@@ -67,6 +70,12 @@ class Manager
 
     // How long the timeout lasts for the next 'tick'
     timeval _tickTime;
+
+    // The last tick time
+    TimeStamp _tickTimeStamp;
+
+    // The time the server was started
+    TimeStamp _serverStartTime;
 
 
     // All the threads
@@ -115,8 +124,19 @@ class Manager
     // Return the port that we are listening on
     int getPortNumber() const;
 
+
     // Return our IP address
     std::string getIPAddress() const;
+
+
+    // Return the timestamp of the last server tick
+    TimeStamp getTickTime() const { return _tickTimeStamp; }
+
+    // Return the time the server was started
+    TimeStamp getStartTime() const { return _serverStartTime; }
+
+    // Return the uptime in seconds
+    Seconds getUpTime() const;
 
 
     // Return a pointer to the requested connection
@@ -135,6 +155,14 @@ class Manager
 
     // Runs the server instance
     void run();
+
+
+    // Triggers the shutdown proceedure manually
+    void shutdown();
+
+
+    // Forces everything to close immediately. Not recommended.
+    void abort();
 };
 
 

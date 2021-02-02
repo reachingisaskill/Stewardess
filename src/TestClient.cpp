@@ -10,7 +10,11 @@ TestClient::TestClient() :
 
 void TestClient::onStart()
 {
-  manager().connectTo( "0.0.0.0", "7007" );
+  Handle result = manager().connectTo( "0.0.0.0", "7007" );
+  if ( ! result )
+  {
+    manager().abort();
+  }
 }
 
 
@@ -39,5 +43,10 @@ void TestClient::onConnectionEvent( Handle connection, ConnectionEvent event )
   }
 }
 
+
+void TestClient::onTick( Milliseconds time )
+{
+  std::cout << "TICK : " << time.count() << std::endl;
+}
 
 

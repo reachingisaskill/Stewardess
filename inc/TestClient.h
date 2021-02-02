@@ -37,7 +37,7 @@ class TestClient : public CallbackInterface
     virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
 
 
-    virtual void onTick( int ) override {}
+    virtual void onTick( Milliseconds ) override;
 };
 
 

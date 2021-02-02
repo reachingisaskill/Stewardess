@@ -72,43 +72,18 @@ void interruptSignalCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   Manager* data = (Manager*)arg;
   std::cerr << "Interrupt received. Time to go." << std::endl;
 
-//  // If the manager has the permission to close the connections
-//  if ( data->_configuration.connectionCloseOnShutdown )
-//  {
-//    data->closeAllConnections();
-//  }
-
-  // Make the death timer pending
-  event_add( data->_deathEvent, &data->_configuration.deathTime );
-
-  if ( data->_listener != nullptr )
-  {
-    // Disable the listener and signal handler
-    evconnlistener_disable( data->_listener );
-  }
-
-  // Disable the signal event. If someone sends it twice we just die.
-  evsignal_del( data->_signalEvent );
-
-  // Trigger the server call back
-  data->_server.onEvent( ServerEvent::Shutdown );
+  // Manager handles the rest.
+  data->shutdown();
 }
 
 
 void killTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
 {
   Manager* data = (Manager*)arg;
-
   std::cout << "Death timer expired. Time to die." << std::endl;
 
-  // Kill the worker threads
-  for ( ThreadVector::iterator it = data->_threads.begin(); it != data->_threads.end(); ++it )
-  {
-    event_base_loopbreak( (*it)->data.eventBase );
-  }
-
-  // Kill the manager thread
-  event_base_loopbreak( data->_eventBase );
+  // Hard stopping of everything
+  data->abort();
 }
 
 
@@ -118,6 +93,14 @@ void tickTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
 
   // If the closed connections have no handles, delete them
   data->cleanupClosedConnections();
+
+  // Update the tick time stamp
+  TimeStamp new_stamp = std::chrono::system_clock::now();
+  auto duration = new_stamp - data->_tickTimeStamp;
+  data->_tickTimeStamp = new_stamp;
+
+  // Trigger the callback
+  data->_server.onTick( std::chrono::duration_cast<std::chrono::milliseconds>( duration ) );
 
   // Set the timeout time to the log of the number of connections
   event_add( data->_tickEvent, data->getTickTime() );
@@ -181,6 +164,7 @@ void bufferReadCB( bufferevent* buffer_event, void* arg )
   }
 
   std::cout << "  Finished reading" << std::endl;
+  connection->touchAccess();
 }
 
 
@@ -204,6 +188,8 @@ void bufferWriteCB( bufferevent* buffer_event, void* data )
     std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
     connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
   }
+
+  connection->touchAccess();
 }
 
 
@@ -268,5 +254,7 @@ void bufferEventCB( bufferevent* buffer_event, short flags, void* data )
     std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
     connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
   }
+
+  connection->touchAccess();
 }
 

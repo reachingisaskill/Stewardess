@@ -15,6 +15,7 @@ void listenerErrorCB( evconnlistener*, void* );
 ////////////////////////////////////////////////////////////////////////////////
 // Server call back functions
 
+void startCB( evutil_socket_t, short, void* );
 void interruptSignalCB( evutil_socket_t, short, void* );
 void killTimerCB( evutil_socket_t, short, void* );
 void tickTimerCB( evutil_socket_t, short, void* );

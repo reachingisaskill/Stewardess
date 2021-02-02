@@ -22,6 +22,7 @@ std::mutex Manager::_instanceCountMutex;
 Manager::Manager( const Configuration& config, CallbackInterface& server ) :
   _configuration( config._data ),
   _server( server ),
+  _abort( false ),
   _connections(),
   _closedConnections(),
   _eventBase( nullptr ),
@@ -31,6 +32,8 @@ Manager::Manager( const Configuration& config, CallbackInterface& server ) :
   _deathEvent( nullptr ),
   _socketAddress(),
   _tickTime( { 1, 0 } ),
+  _tickTimeStamp(),
+  _serverStartTime(),
   _threads(),
   _nextThread( 0 )
 {
@@ -92,10 +95,36 @@ int Manager::getPortNumber() const
 }
 
 
+Seconds Manager::getUpTime() const
+{
+  return std::chrono::duration_cast<Seconds>( std::chrono::system_clock::now() - _serverStartTime );
+}
+
+
+Handle Manager::requestHandle( UniqueID uid )
+{
+  GuardLock lk( _connectionsMutex );
+
+  ConnectionMap::iterator found = _connections.find( uid );
+  if ( found == _connections.end() )
+  {
+    return Handle();
+  }
+  else 
+  {
+    return found->second->requestHandle();
+  }
+}
+
+
 void Manager::run()
 {
   // Give the server a reference to this manager.
   _server._manager = this;
+  
+
+  // Server starts now!
+  _serverStartTime = std::chrono::system_clock::now();
 
 
   // Configure the socket address
@@ -122,7 +151,16 @@ void Manager::run()
     {
       throw std::runtime_error( "Could not create the death event." );
     }
-    // event_add( data->deathEvent, &data->deathTime );
+    // event_add( _deathEvent, &_deathTime );
+
+
+    // Create a tick event
+    _tickEvent = evtimer_new( _eventBase, tickTimerCB, (void*)this );
+    if ( _tickEvent == nullptr )
+    {
+      throw std::runtime_error( "Could not create the tick event." );
+    }
+    event_add( _tickEvent, &_tickTime );
 
 
     // Create a signal event so we can close the system down
@@ -173,11 +211,17 @@ void Manager::run()
       evconnlistener_set_error_cb( _listener, listenerErrorCB );
     }
 
+    // Set the tick time stamp
+    _tickTimeStamp = std::chrono::system_clock::now();
 
     // Start the libevent loop using the base event
     std::cout << "Dispatching primary event" << std::endl;
+
     _server.onStart();
-    event_base_dispatch( _eventBase );
+    if ( ! _abort )
+    {
+      event_base_dispatch( _eventBase );
+    }
     _server.onStop();
 
     // Delete all the outstanding connections
@@ -220,6 +264,51 @@ void Manager::run()
 }
 
 
+void Manager::shutdown()
+{
+  // Make the death timer pending
+  event_add( _deathEvent, &_configuration.deathTime );
+
+  if ( _listener != nullptr )
+  {
+    // Disable the listener and signal handler
+    evconnlistener_disable( _listener );
+  }
+
+  // Disable the signal event. If someone sends it twice we just die.
+  evsignal_del( _signalEvent );
+
+  // Trigger the server call back
+  _server.onEvent( ServerEvent::Shutdown );
+}
+
+
+void Manager::abort()
+{
+  // Leave a flag for things to check
+  _abort = true;
+
+  // Call on stop function
+  _server.onStop();
+
+  // Disable the listener
+  if ( _listener != nullptr )
+  {
+    evconnlistener_disable( _listener );
+  }
+
+  // Disable the signal event. If someone sends it twice we just die.
+  evsignal_del( _signalEvent );
+
+  // Kill the worker threads
+  for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
+  {
+    event_base_loopbreak( (*it)->data.eventBase );
+  }
+
+  // Kill the manager thread
+  event_base_loopbreak( _eventBase );
+}
 
 
 Handle Manager::connectTo( std::string host, std::string port )
@@ -366,8 +455,6 @@ timeval* Manager::getTickTime()
   }
 
   _tickTime.tv_sec = _configuration.minTickTime + _configuration.tickTimeModifier * ( std::log10( num + 1 ) );
-
-  std::cout << "TICK " << _tickTime.tv_sec;
 
   return & _tickTime;
 }

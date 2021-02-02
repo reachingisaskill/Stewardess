@@ -29,7 +29,9 @@ typedef std::queue< Payload* > PayloadQueue;
 typedef std::queue< const char* > ErrorQueue;
 
 // Prefered time stamp data type
-typedef std::time_t TimeStamp;
+typedef std::chrono::time_point<std::chrono::system_clock> TimeStamp;
+typedef std::chrono::milliseconds Milliseconds;
+typedef std::chrono::seconds Seconds;
 
 // Really big unique id type
 typedef long long unsigned int UniqueID;

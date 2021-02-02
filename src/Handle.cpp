@@ -61,3 +61,15 @@ void Handle::write( Payload* p ) const
   _data->serializer->serialize( p );
 }
 
+
+TimeStamp Handle::creationTime() const
+{
+  return _data->getCreationTime();
+}
+
+
+TimeStamp Handle::lastAccess() const
+{
+  return _data->getAccess();
+}
+

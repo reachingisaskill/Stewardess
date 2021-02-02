@@ -11,6 +11,8 @@ Connection::Connection() :
   _references(),
   _identifier( 0 ),
   _close( false ),
+  _connectionTime( std::chrono::system_clock::now() ),
+  _lastAccess( std::chrono::system_clock::now() ),
   bufferEvent( nullptr ),
   socketAddress(),
   server( nullptr ),
@@ -57,4 +59,22 @@ size_t Connection::getNumberHandles() const
 }
 
 
+TimeStamp Connection::getCreationTime() const
+{
+  return _connectionTime;
+}
+
+
+void Connection::touchAccess()
+{
+  GuardLock lk( _lastAccessMutex );
+  _lastAccess = std::chrono::system_clock::now();
+}
+
+
+TimeStamp Connection::getAccess() const
+{
+  GuardLock lk( _lastAccessMutex );
+  return _lastAccess;
+}
 
