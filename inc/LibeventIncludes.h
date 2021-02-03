@@ -1,6 +1,6 @@
 
-#ifndef LIBEVENT_INCLUDES_H_
-#define LIBEVENT_INCLUDES_H_
+#ifndef STEWARDESS_LIBEVENT_INCLUDES_H_
+#define STEWARDESS_LIBEVENT_INCLUDES_H_
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -15,5 +15,5 @@
 #include <csignal>
 
 
-#endif // LIBEVENT_INCLUDES_H_
+#endif // STEWARDESS_LIBEVENT_INCLUDES_H_
 

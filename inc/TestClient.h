@@ -1,6 +1,6 @@
 
-#ifndef TEST_CLIENT_H_
-#define TEST_CLIENT_H_
+#ifndef STEWARDESS_TEST_CLIENT_H_
+#define STEWARDESS_TEST_CLIENT_H_
 
 #include "Definitions.h"
 #include "CallbackInterface.h"
@@ -8,38 +8,42 @@
 #include "Connection.h"
 
 
-class TestClient : public CallbackInterface
+namespace Stewardess
 {
-  private:
-    unsigned int _counter;
 
-  public:
-    TestClient();
+  class TestClient : public CallbackInterface
+  {
+    private:
+      unsigned int _counter;
 
-
-    // Return a new'd serializer object to implement the transfer protocol
-    virtual Serializer* buildSerializer() const override { return new TestSerializer(); }
-
-
-    // Called when the server first starts for initialisation functions
-    virtual void onStart() override;
+    public:
+      TestClient();
 
 
-    // Called when a read event is triggered.
-    virtual void onRead( Handle, Payload* ) override;
+      // Return a new'd serializer object to implement the transfer protocol
+      virtual Serializer* buildSerializer() const override { return new TestSerializer(); }
 
 
-    // Called when a read event is triggered.
-    virtual void onWrite( Handle ) override {}
+      // Called when the server first starts for initialisation functions
+      virtual void onStart() override;
 
 
-    // Called when a connection event occurs
-    virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
+      // Called when a read event is triggered.
+      virtual void onRead( Handle, Payload* ) override;
 
 
-    virtual void onTick( Milliseconds ) override;
-};
+      // Called when a read event is triggered.
+      virtual void onWrite( Handle ) override {}
 
 
-#endif // TEST_CLIENT_H_
+      // Called when a connection event occurs
+      virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
+
+
+      virtual void onTick( Milliseconds ) override;
+  };
+
+}
+
+#endif // STEWARDESS_TEST_CLIENT_H_
 

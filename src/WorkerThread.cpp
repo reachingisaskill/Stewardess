@@ -2,11 +2,16 @@
 #include "WorkerThread.h"
 
 
-void workerThread( WorkerData worker_data )
+namespace Stewardess
 {
-  // Start the libevent loop using the base event
-  std::cout << "Configured worker. Dispatching." << std::endl;
 
-  event_base_loop( worker_data.eventBase, EVLOOP_NO_EXIT_ON_EMPTY );
+  void workerThread( WorkerData worker_data )
+  {
+    // Start the libevent loop using the base event
+    std::cout << "Configured worker. Dispatching." << std::endl;
+
+    event_base_loop( worker_data.eventBase, EVLOOP_NO_EXIT_ON_EMPTY );
+  }
+
 }
 

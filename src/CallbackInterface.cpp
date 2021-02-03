@@ -3,13 +3,18 @@
 #include "Connection.h"
 
 
-CallbackInterface::CallbackInterface() :
-  _manager( nullptr )
+namespace Stewardess
 {
-}
+
+  CallbackInterface::CallbackInterface() :
+    _manager( nullptr )
+  {
+  }
 
 
-CallbackInterface::~CallbackInterface()
-{
+  CallbackInterface::~CallbackInterface()
+  {
+  }
+
 }
 

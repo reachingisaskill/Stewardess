@@ -2,20 +2,24 @@
 #include "TestServer.h"
 
 
-void TestServer::onRead( Handle c, Payload* p )
+namespace Stewardess
 {
-  std::cout << "RECEIVED: From connection: " << c.getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
-  TestPayload reply( std::string( "Cheers bruh" ) );
 
-  c.write( &reply );
+  void TestServer::onRead( Handle c, Payload* p )
+  {
+    std::cout << "RECEIVED: From connection: " << c.getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
+    TestPayload reply( std::string( "Cheers bruh" ) );
 
-  delete p;
+    c.write( &reply );
+
+    delete p;
+  }
+
+
+  void TestServer::onConnectionEvent( Handle, ConnectionEvent )
+  {
+    std::cout << "Connection Event" << std::endl;
+  }
+
 }
-
-
-void TestServer::onConnectionEvent( Handle, ConnectionEvent )
-{
-  std::cout << "Connection Event" << std::endl;
-}
-
 

@@ -1,17 +1,23 @@
 
-#ifndef PAYLOAD_BASE_H_
-#define PAYLOAD_BASE_H_
+#ifndef STEWARDESS_PAYLOAD_BASE_H_
+#define STEWARDESS_PAYLOAD_BASE_H_
+
+#include "Definitions.h"
 
 
-class Payload
+namespace Stewardess
 {
-  private:
 
-  public:
-    // Virtual destructor
-    virtual ~Payload() {}
-};
+  class Payload
+  {
+    private:
 
+    public:
+      // Virtual destructor
+      virtual ~Payload() {}
+  };
 
-#endif // PAYLOAD_BASE_H_
+}
+
+#endif // STEWARDESS_PAYLOAD_BASE_H_
 

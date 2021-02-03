@@ -1,71 +1,77 @@
 
-#ifndef SERIALIZER_BASE_H_
-#define SERIALIZER_BASE_H_
+#ifndef STEWARDESS_SERIALIZER_BASE_H_
+#define STEWARDESS_SERIALIZER_BASE_H_
 
 #include "Definitions.h"
 #include <mutex>
 
-class Payload;
 
-class Serializer
+namespace Stewardess
 {
-  private:
-    // Queue of deserialized payloads
-    PayloadQueue _payloads;
-    std::mutex _payloadMutex;
 
-    // Queue of serialized payloads
-    BufferQueue _buffers;
-    std::mutex _bufferMutex;
+  class Payload;
 
-    // Queue of errors that occured
-    ErrorQueue _errors;
-    std::mutex _errorMutex;
+  class Serializer
+  {
+    private:
+      // Queue of deserialized payloads
+      PayloadQueue _payloads;
+      std::mutex _payloadMutex;
 
+      // Queue of serialized payloads
+      BufferQueue _buffers;
+      std::mutex _bufferMutex;
 
-  protected:
-    // Push a completed payload to the private buffer
-    void pushPayload( Payload* );
-
-    // Push a full character buffer (signal payload) to the internal queue
-    void pushBuffer( Buffer* );
-
-    // Push a char* pointer to the error queue
-    void pushError( const char* );
+      // Queue of errors that occured
+      ErrorQueue _errors;
+      std::mutex _errorMutex;
 
 
-  public:
-    Serializer() {}
-    virtual ~Serializer() {}
+    protected:
+      // Push a completed payload to the private buffer
+      void pushPayload( Payload* );
 
-    // Turns a payload into a character buffer for writing
-    virtual void serialize( const Payload* ) = 0;
+      // Push a full character buffer (signal payload) to the internal queue
+      void pushBuffer( Buffer* );
 
-    // Turn a character buffer into payload
-    virtual void deserialize( const Buffer* ) = 0;
-
-
-    // Writes the internal buffer to the output buffer
-    Buffer* getBuffer();
-
-    // Return a flag to indicate there are write buffers ready to send
-    bool bufferEmpty() const;
+      // Push a char* pointer to the error queue
+      void pushError( const char* );
 
 
-    // Return a finished message
-    Payload* getPayload();
+    public:
+      Serializer() {}
+      virtual ~Serializer() {}
 
-    // Return a flag to state that a message is finished. Is called after each character is pushed.
-    bool payloadEmpty() const;
+      // Turns a payload into a character buffer for writing
+      virtual void serialize( const Payload* ) = 0;
+
+      // Turn a character buffer into payload
+      virtual void deserialize( const Buffer* ) = 0;
 
 
-    // Return an error string describing the error
-    const char* getError();
+      // Writes the internal buffer to the output buffer
+      Buffer* getBuffer();
 
-    // Declares an error has happened
-    bool errorEmpty() const;
+      // Return a flag to indicate there are write buffers ready to send
+      bool bufferEmpty() const;
 
-};
 
-#endif // SERIALIZER_BASE_H_
+      // Return a finished message
+      Payload* getPayload();
+
+      // Return a flag to state that a message is finished. Is called after each character is pushed.
+      bool payloadEmpty() const;
+
+
+      // Return an error string describing the error
+      const char* getError();
+
+      // Declares an error has happened
+      bool errorEmpty() const;
+
+  };
+
+}
+
+#endif // STEWARDESS_SERIALIZER_BASE_H_
 

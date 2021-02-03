@@ -5,71 +5,76 @@
 #include "Serializer.h"
 
 
-Handle::Handle() :
-  _data( nullptr ),
-  _counter()
+namespace Stewardess
 {
-}
+
+  Handle::Handle() :
+    _data( nullptr ),
+    _counter()
+  {
+  }
 
 
-Handle::Handle( ReferenceCounter counter, Connection* d ) :
-  _data( d ),
-  _counter( counter )
-{
-}
+  Handle::Handle( ReferenceCounter counter, Connection* d ) :
+    _data( d ),
+    _counter( counter )
+  {
+  }
 
 
-Handle::~Handle()
-{
-}
+  Handle::~Handle()
+  {
+  }
 
 
-size_t Handle::getIDNumber() const
-{
-  return _data->getIdentifier();
-}
+  size_t Handle::getIDNumber() const
+  {
+    return _data->getIdentifier();
+  }
 
 
-std::string Handle::getIPAddress() const
-{
-  // 40 Allows for IPv6 + \0
-  char address_string[40];
-  evutil_inet_ntop( _data->socketAddress.sin_family, &_data->socketAddress.sin_addr, address_string, 40 );
-  return std::string( address_string );
-}
+  std::string Handle::getIPAddress() const
+  {
+    // 40 Allows for IPv6 + \0
+    char address_string[40];
+    evutil_inet_ntop( _data->socketAddress.sin_family, &_data->socketAddress.sin_addr, address_string, 40 );
+    return std::string( address_string );
+  }
 
-int Handle::getPortNumber() const
-{
-  return _data->socketAddress.sin_port;
-}
-
-
-bool Handle::isOpen() const
-{
-  return _data->isOpen();
-}
+  int Handle::getPortNumber() const
+  {
+    return _data->socketAddress.sin_port;
+  }
 
 
-void Handle::close() const
-{
-  _data->close();
-}
+  bool Handle::isOpen() const
+  {
+    return _data->isOpen();
+  }
 
 
-void Handle::write( Payload* p ) const
-{
-  _data->serializer->serialize( p );
-}
+  void Handle::close() const
+  {
+    _data->close();
+  }
 
 
-TimeStamp Handle::creationTime() const
-{
-  return _data->getCreationTime();
-}
+  void Handle::write( Payload* p ) const
+  {
+    _data->serializer->serialize( p );
+  }
 
 
-TimeStamp Handle::lastAccess() const
-{
-  return _data->getAccess();
+  TimeStamp Handle::creationTime() const
+  {
+    return _data->getCreationTime();
+  }
+
+
+  TimeStamp Handle::lastAccess() const
+  {
+    return _data->getAccess();
+  }
+
 }
 

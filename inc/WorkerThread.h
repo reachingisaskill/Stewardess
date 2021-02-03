@@ -1,29 +1,33 @@
 
-#ifndef WORKER_THREAD_H_
-#define WORKER_THREAD_H_
+#ifndef STEWARDESS_WORKER_THREAD_H_
+#define STEWARDESS_WORKER_THREAD_H_
 
 #include "Definitions.h"
 #include "LibeventIncludes.h"
 
 
-struct WorkerData
+namespace Stewardess
 {
-  event_base* eventBase;
-  event* tickEvent;
-  timeval tickTime;
-};
+
+  struct WorkerData
+  {
+    event_base* eventBase;
+    event* tickEvent;
+    timeval tickTime;
+  };
 
 
-struct ThreadInfo
-{
-  // The thread object
-  std::thread theThread;
-  WorkerData data;
-};
+  struct ThreadInfo
+  {
+    // The thread object
+    std::thread theThread;
+    WorkerData data;
+  };
 
 
-void workerThread( WorkerData );
+  void workerThread( WorkerData );
 
+}
 
-#endif // WORKER_THREAD_H_
+#endif // STEWARDESS_WORKER_THREAD_H_
 

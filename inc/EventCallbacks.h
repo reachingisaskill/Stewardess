@@ -1,35 +1,40 @@
 
-#ifndef EVENT_CALLBACKS_H_
-#define EVENT_CALLBACKS_H_
+#ifndef STEWARDESS_EVENT_CALLBACKS_H_
+#define STEWARDESS_EVENT_CALLBACKS_H_
 
+#include "Definitions.h"
 #include "LibeventIncludes.h"
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Declare the listener callback functions
+namespace Stewardess
+{
 
-void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
-void listenerErrorCB( evconnlistener*, void* );
+  ////////////////////////////////////////////////////////////////////////////////
+  // Declare the listener callback functions
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Server call back functions
-
-void startCB( evutil_socket_t, short, void* );
-void interruptSignalCB( evutil_socket_t, short, void* );
-void killTimerCB( evutil_socket_t, short, void* );
-void tickTimerCB( evutil_socket_t, short, void* );
-
-void workerTickTimerCB( evutil_socket_t, short, void* );
+  void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
+  void listenerErrorCB( evconnlistener*, void* );
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Declare the bufferevent call back functions
+  ////////////////////////////////////////////////////////////////////////////////
+  // Server call back functions
 
-void bufferReadCB( bufferevent*, void* );
-void bufferWriteCB( bufferevent*, void* );
-void bufferEventCB( bufferevent*, short, void* );
+  void startCB( evutil_socket_t, short, void* );
+  void interruptSignalCB( evutil_socket_t, short, void* );
+  void killTimerCB( evutil_socket_t, short, void* );
+  void tickTimerCB( evutil_socket_t, short, void* );
+
+  void workerTickTimerCB( evutil_socket_t, short, void* );
 
 
-#endif // EVENT_CALLBACKS_H_
+  ////////////////////////////////////////////////////////////////////////////////
+  // Declare the bufferevent call back functions
+
+  void bufferReadCB( bufferevent*, void* );
+  void bufferWriteCB( bufferevent*, void* );
+  void bufferEventCB( bufferevent*, short, void* );
+
+}
+
+#endif // STEWARDESS_EVENT_CALLBACKS_H_
 

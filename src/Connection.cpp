@@ -3,78 +3,83 @@
 #include "Serializer.h"
 
 
-UniqueID Connection::_idCounter;
-std::mutex Connection::_idCounterMutex;
-
-
-Connection::Connection() :
-  _references(),
-  _identifier( 0 ),
-  _close( false ),
-  _connectionTime( std::chrono::system_clock::now() ),
-  _lastAccess( std::chrono::system_clock::now() ),
-  bufferEvent( nullptr ),
-  socketAddress(),
-  server( nullptr ),
-  serializer( nullptr ),
-  readBuffer()
+namespace Stewardess
 {
-  GuardLock lk( _idCounterMutex );
-  _identifier = _idCounter++;
-}
+
+  UniqueID Connection::_idCounter;
+  std::mutex Connection::_idCounterMutex;
 
 
-Connection::~Connection()
-{
-  if ( bufferEvent != nullptr )
-    bufferevent_free( bufferEvent );
-  if ( serializer != nullptr )
-    delete serializer;
-}
+  Connection::Connection() :
+    _references(),
+    _identifier( 0 ),
+    _close( false ),
+    _connectionTime( std::chrono::system_clock::now() ),
+    _lastAccess( std::chrono::system_clock::now() ),
+    bufferEvent( nullptr ),
+    socketAddress(),
+    server( nullptr ),
+    serializer( nullptr ),
+    readBuffer()
+  {
+    GuardLock lk( _idCounterMutex );
+    _identifier = _idCounter++;
+  }
 
 
-void Connection::close()
-{
-  GuardLock lk( _closeMutex );
-  _close = false;
-}
+  Connection::~Connection()
+  {
+    if ( bufferEvent != nullptr )
+      bufferevent_free( bufferEvent );
+    if ( serializer != nullptr )
+      delete serializer;
+  }
 
 
-bool Connection::isOpen()
-{
-  GuardLock lk( _closeMutex );
-  return !_close;
-}
+  void Connection::close()
+  {
+    GuardLock lk( _closeMutex );
+    _close = false;
+  }
 
 
-Handle Connection::requestHandle()
-{
-  return Handle( _references, this );
-}
+  bool Connection::isOpen()
+  {
+    GuardLock lk( _closeMutex );
+    return !_close;
+  }
 
 
-size_t Connection::getNumberHandles() const
-{
-  return _references.getNumber();
-}
+  Handle Connection::requestHandle()
+  {
+    return Handle( _references, this );
+  }
 
 
-TimeStamp Connection::getCreationTime() const
-{
-  return _connectionTime;
-}
+  size_t Connection::getNumberHandles() const
+  {
+    return _references.getNumber();
+  }
 
 
-void Connection::touchAccess()
-{
-  GuardLock lk( _lastAccessMutex );
-  _lastAccess = std::chrono::system_clock::now();
-}
+  TimeStamp Connection::getCreationTime() const
+  {
+    return _connectionTime;
+  }
 
 
-TimeStamp Connection::getAccess() const
-{
-  GuardLock lk( _lastAccessMutex );
-  return _lastAccess;
+  void Connection::touchAccess()
+  {
+    GuardLock lk( _lastAccessMutex );
+    _lastAccess = std::chrono::system_clock::now();
+  }
+
+
+  TimeStamp Connection::getAccess() const
+  {
+    GuardLock lk( _lastAccessMutex );
+    return _lastAccess;
+  }
+
 }
 

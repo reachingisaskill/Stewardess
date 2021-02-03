@@ -2,51 +2,55 @@
 #include "TestClient.h"
 
 
-TestClient::TestClient() :
-  _counter( 0 )
+namespace Stewardess
 {
-}
 
-
-void TestClient::onStart()
-{
-  Handle result = manager().connectTo( "0.0.0.0", "7007" );
-  if ( ! result )
+  TestClient::TestClient() :
+    _counter( 0 )
   {
-    manager().abort();
   }
-}
 
 
-void TestClient::onRead( Handle c, Payload* p )
-{
-  std::cout << "RECEIVED: From connection: " << c.getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
-  delete p;
-}
-
-
-void TestClient::onConnectionEvent( Handle connection, ConnectionEvent event )
-{
-  switch( event )
+  void TestClient::onStart()
   {
-    case ConnectionEvent::Connect :
+    Handle result = manager().connectTo( "0.0.0.0", "7007" );
+    if ( ! result )
     {
-      std::cout << "Connection Event" << std::endl;
-
-      TestPayload p( "Hello" );
-      connection.write( &p );
+      manager().abort();
     }
-    break;
-
-    default:
-    break;
   }
+
+
+  void TestClient::onRead( Handle c, Payload* p )
+  {
+    std::cout << "RECEIVED: From connection: " << c.getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
+    delete p;
+  }
+
+
+  void TestClient::onConnectionEvent( Handle connection, ConnectionEvent event )
+  {
+    switch( event )
+    {
+      case ConnectionEvent::Connect :
+      {
+        std::cout << "Connection Event" << std::endl;
+
+        TestPayload p( "Hello" );
+        connection.write( &p );
+      }
+      break;
+
+      default:
+      break;
+    }
+  }
+
+
+  void TestClient::onTick( Milliseconds time )
+  {
+    std::cout << "TICK : " << time.count() << std::endl;
+  }
+
 }
-
-
-void TestClient::onTick( Milliseconds time )
-{
-  std::cout << "TICK : " << time.count() << std::endl;
-}
-
 
