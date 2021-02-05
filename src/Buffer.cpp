@@ -1,6 +1,8 @@
 
 #include "Buffer.h"
 
+#include <cstring>
+
 
 namespace Stewardess
 {
@@ -10,6 +12,7 @@ namespace Stewardess
     _data( new char[1] ),
     _size( 0 )
   {
+    _data[0] = 0;
   }
 
 
@@ -18,6 +21,7 @@ namespace Stewardess
     _data( new char[ _capacity ] ),
     _size( 0 )
   {
+    std::memset( _data, 0, _capacity );
   }
 
 
@@ -73,6 +77,13 @@ namespace Stewardess
   {
     _data[_size] = c;
     ++_size;
+  }
+
+
+  void Buffer::push( const std::string& string )
+  {
+    std::memcpy( &_data[_size], string.c_str(), string.size() );
+    _size += string.size();
   }
 
 

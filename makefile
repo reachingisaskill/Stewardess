@@ -42,7 +42,7 @@ EXE_SRC_DIR = exec
 
 
 # Library Name
-LIB_NAME = TCPServer
+LIB_NAME = Stewardess
 
 
 # Includes and Libraries

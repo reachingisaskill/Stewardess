@@ -4,6 +4,8 @@
 
 #include "Definitions.h"
 
+#include <cstring>
+
 
 namespace Stewardess
 {
@@ -51,6 +53,20 @@ namespace Stewardess
       // Push a character to the end
       void push( char );
 
+      // Push a string character by character to the end
+      void push( const std::string& );
+
+
+      // Bytewise copy into the buffer
+      template < typename DATA >
+      void bytePush( DATA& );
+
+      // Bytewise copy out of the buffer
+      template < typename DATA >
+      void bytePop( size_t, DATA& ) const;
+
+
+      // Return the character at position n
       char at( size_t n ) const { return _data[n]; }
 
 
@@ -74,6 +90,21 @@ namespace Stewardess
       constexpr const_iterator end() const { return &_data[_size]; }
 
   };
+
+
+  template < typename DATA >
+  void Buffer::bytePush( DATA& data )
+  {
+    std::memcpy( (void*)&_data[_size], (void*)&data, sizeof( DATA ) );
+    _size += sizeof( DATA );
+  }
+
+
+  template < typename DATA >
+  void Buffer::bytePop( size_t pos, DATA& data ) const
+  {
+    std::memcpy( (void*)&data, (void*)&_data[pos], sizeof( DATA ) );
+  }
 
 }
 
