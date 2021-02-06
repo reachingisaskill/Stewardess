@@ -22,8 +22,16 @@ namespace Stewardess
     Manager* data = (Manager*)arg;
     std::cout << "  Listener Accept Called " << std::endl;
 
+    event_base* worker_base;
     // Choose a worker to handle it
-    event_base* worker_base = data->_threads[ data->getNextThread() ]->data.eventBase;
+    if ( data->singleThreadMode() )
+    {
+      worker_base = data->_eventBase;
+    }
+    else
+    {
+      worker_base = data->_threads[ data->getNextThread() ]->data.eventBase;
+    }
 
     // Create a buffer event, bound to the tcp socket. When freed it will close the socket.
     bufferevent* buffer_event = bufferevent_socket_new( worker_base, new_socket, BEV_OPT_CLOSE_ON_FREE );

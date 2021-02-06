@@ -364,7 +364,15 @@ namespace Stewardess
       return Handle();
     }
 
-    event_base* worker_base = _threads[ this->getNextThread() ]->data.eventBase;
+    event_base* worker_base;
+    if ( this->singleThreadMode() )
+    {
+      worker_base = _eventBase;
+    }
+    else
+    {
+      worker_base = _threads[ this->getNextThread() ]->data.eventBase;
+    }
 
     // Create a buffer event, bound to the tcp socket. When freed it will close the socket.
     bufferevent* buffer_event = bufferevent_socket_new( worker_base, new_socket, BEV_OPT_CLOSE_ON_FREE );

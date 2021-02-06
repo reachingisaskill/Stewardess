@@ -17,7 +17,7 @@ int main( int, char** )
   Configuration config( PORT_NUMBER );
 
   // Configure the config
-  config.setNumberThreads( 1 );
+  config.setNumberThreads( 0 );
   config.setDefaultBufferSize( 4096 );
   config.setReadTimeout( 0 );
   config.setWriteTimeout( 3 );

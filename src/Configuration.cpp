@@ -29,14 +29,7 @@ namespace Stewardess
 
   void Configuration::setNumberThreads( unsigned n )
   {
-    if ( n == 0 )
-    {
-      throw std::runtime_error( "Number of threads must be at least 1" );
-    }
-    else
-    {
-      _data.numThreads = n;
-    }
+    _data.numThreads = n;
   }
 
 

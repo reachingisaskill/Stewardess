@@ -132,6 +132,10 @@ namespace Stewardess
       std::string getIPAddress() const;
 
 
+      // Returns true if everything is to run on the primary thread
+      bool singleThreadMode() const { return _threads.size() == 0; }
+
+
       // Return the timestamp of the last server tick
       TimeStamp getTickTime() const { return _tickTimeStamp; }
 
