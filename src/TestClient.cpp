@@ -7,7 +7,8 @@ namespace Stewardess
 
   TestClient::TestClient() :
     _counter( 0 ),
-    _handle()
+    _handle(),
+    _tickCounter( 0 )
   {
   }
 
@@ -51,6 +52,13 @@ namespace Stewardess
   void TestClient::onTick( Milliseconds time )
   {
     std::cout << "TICK : " << time.count() << std::endl;
+    _tickCounter += time.count();
+    if ( _tickCounter > 5000 )
+    {
+      _tickCounter -= 5000;
+      TestPayload p( "Me again" );
+      _handle.write( &p );
+    }
   }
 
 }

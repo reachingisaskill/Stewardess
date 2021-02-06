@@ -40,7 +40,7 @@ namespace Stewardess
 
     public:
       Serializer() {}
-      virtual ~Serializer() {}
+      virtual ~Serializer();
 
       // Turns a payload into a character buffer for writing
       virtual void serialize( const Payload* ) = 0;

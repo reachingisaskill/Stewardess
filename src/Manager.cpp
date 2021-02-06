@@ -41,6 +41,11 @@ namespace Stewardess
     _nextThread( 0 )
   {
     std::lock_guard<std::mutex> lock( _instanceCountMutex );
+    if ( _instanceCount == 0 )
+    {
+      if ( evthread_use_pthreads() != 0 )
+        std::cerr << "Could not enable pthreads?!" << std::endl;
+    }
     _instanceCount += 1;
 
     memset( &_socketAddress, 0, sizeof( _socketAddress ) );
@@ -193,7 +198,7 @@ namespace Stewardess
         {
           throw std::runtime_error( "Could not create the worker tick event." );
         }
-        event_add( info->data.tickEvent, &info->data.tickTime );
+//        event_add( info->data.tickEvent, &info->data.tickTime );
 
         info->theThread = std::thread( workerThread, info->data );
         _threads.push_back( info );

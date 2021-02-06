@@ -16,6 +16,7 @@ namespace Stewardess
     private:
       unsigned int _counter;
       Handle _handle;
+      unsigned long _tickCounter;
 
     public:
       TestClient();

@@ -1,9 +1,30 @@
 
 #include "Serializer.h"
+#include "Payload.h"
+#include "Buffer.h"
 
 
 namespace Stewardess
 {
+
+  Serializer::~Serializer()
+  {
+    while ( ! _payloads.empty() )
+    {
+      delete _payloads.front();
+      _payloads.pop();
+    }
+    while ( ! _buffers.empty() )
+    {
+      delete _buffers.front();
+      _buffers.pop();
+    }
+    while ( ! _errors.empty() )
+    {
+      _errors.pop();
+    }
+  }
+
 
   void Serializer::pushPayload( Payload* p )
   {

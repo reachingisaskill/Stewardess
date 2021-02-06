@@ -20,7 +20,7 @@ int main( int, char** )
   config.setNumberThreads( 0 );
   config.setDefaultBufferSize( 4096 );
   config.setReadTimeout( 0 );
-  config.setWriteTimeout( 3 );
+  config.setWriteTimeout( 1 );
   config.setTickTimeModifier( 1.0 );
   config.setCloseConnectionsOnShutdown( true );
 
