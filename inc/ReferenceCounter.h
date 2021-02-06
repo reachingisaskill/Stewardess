@@ -24,6 +24,8 @@ namespace Stewardess
       ReferenceData* _data;
       mutable std::mutex _mutex;
 
+      void _checkSubtract();
+
     public:
       // New counter
       ReferenceCounter();

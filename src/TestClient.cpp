@@ -6,15 +6,16 @@ namespace Stewardess
 {
 
   TestClient::TestClient() :
-    _counter( 0 )
+    _counter( 0 ),
+    _handle()
   {
   }
 
 
   void TestClient::onStart()
   {
-    Handle result = manager().connectTo( "0.0.0.0", "7007" );
-    if ( ! result )
+    _handle = manager().connectTo( "0.0.0.0", "7007" );
+    if ( ! _handle )
     {
       manager().abort();
     }

@@ -15,16 +15,7 @@ namespace Stewardess
   {
     if ( _data != nullptr )
     {
-      // If zero, delete
-      if ( _data->references == 0 )
-      {
-        delete _data;
-        _data = nullptr;
-      }
-      else
-      {
-        _data->references -= 1;
-      }
+      this->_checkSubtract();
     }
   }
 
@@ -51,7 +42,7 @@ namespace Stewardess
   {
     if ( _data )
     {
-      _data->references -= 1;
+      this->_checkSubtract();
     }
 
     _data = other._data;
@@ -69,7 +60,7 @@ namespace Stewardess
   {
     if ( _data )
     {
-      _data->references -= 1;
+      this->_checkSubtract();
     }
 
     _data = other._data;
@@ -77,6 +68,21 @@ namespace Stewardess
     other._data = nullptr;
 
     return *this;
+  }
+
+
+  void ReferenceCounter::_checkSubtract()
+  {
+    // If zero, delete
+    if ( _data->references == 0 )
+    {
+      delete _data;
+      _data = nullptr;
+    }
+    else
+    {
+      _data->references -= 1;
+    }
   }
 
 

@@ -94,7 +94,7 @@ namespace Stewardess
 
   int Manager::getPortNumber() const
   {
-    return _socketAddress.sin_port;
+    return ntohs( _socketAddress.sin_port );
   }
 
 
@@ -360,7 +360,7 @@ namespace Stewardess
         free( address_answer );
         address_answer = temp;
       }
-      std::cerr << "Failed to connect to server" << std::endl;
+      std::cerr << "Failed to connect to server " << host << ":" << port << std::endl;
       return Handle();
     }
 
