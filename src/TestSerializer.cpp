@@ -25,6 +25,7 @@ namespace Stewardess
 
   void TestSerializer::serialize( const Payload* p )
   {
+    std::cout << "Serializing" << std::endl;
     const std::string& message = ((TestPayload*)p)->getMessage();
     Buffer* buffer = new Buffer( message.size()+2 );
     buffer->push( '{' );
@@ -37,7 +38,6 @@ namespace Stewardess
     buffer->push( '}' );
 
     buffer->resize( message.size()+2 );
-    std::cout << "Writing response" << std::endl;
 
     this->pushBuffer( buffer );
   }
@@ -45,6 +45,7 @@ namespace Stewardess
 
   void TestSerializer::deserialize( const Buffer* buffer )
   {
+    std::cout << "Deserializing" << std::endl;
     bool building = false;
     // Iterate through and break into messages
     for ( Buffer::const_iterator it = buffer->begin(); it != buffer->end(); ++it )

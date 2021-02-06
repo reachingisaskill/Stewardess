@@ -35,15 +35,31 @@ namespace Stewardess
 
   std::string Handle::getIPAddress() const
   {
-    // 40 Allows for IPv6 + \0
-    char address_string[40];
-    evutil_inet_ntop( _data->socketAddress.sin_family, &_data->socketAddress.sin_addr, address_string, 40 );
-    return std::string( address_string );
+    if ( _data->socketAddress.sa_family == AF_INET )
+    {
+      sockaddr_in* address_pointer = (sockaddr_in*)&_data->socketAddress;
+      // 40 Allows for IPv6 + \0
+      char address_string[40];
+      evutil_inet_ntop( address_pointer->sin_family, &address_pointer->sin_addr, address_string, 40 );
+      return std::string( address_string );
+    }
+    else
+    {
+      return std::string( "" );
+    }
   }
 
   int Handle::getPortNumber() const
   {
-    return _data->socketAddress.sin_port;
+    if ( _data->socketAddress.sa_family == AF_INET )
+    {
+      sockaddr_in* address_pointer = (sockaddr_in*)&_data->socketAddress;
+      return address_pointer->sin_port;
+    }
+    else
+    {
+      return 0;
+    }
   }
 
 
@@ -61,7 +77,7 @@ namespace Stewardess
 
   void Handle::write( Payload* p ) const
   {
-    _data->serializer->serialize( p );
+    _data->write( p );
   }
 
 

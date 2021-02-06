@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <cerrno>
 
 
 namespace Stewardess
@@ -17,10 +18,12 @@ namespace Stewardess
   ////////////////////////////////////////////////////////////////////////////////
   // Listener call back functions
 
-  void listenerAcceptCB( evconnlistener* /*listener*/, evutil_socket_t new_socket, sockaddr* address, int address_length, void* arg )
+  void listenerAcceptCB( evconnlistener* /*listener*/, evutil_socket_t new_socket, sockaddr* address, int /*address_length*/, void* arg )
   {
     Manager* data = (Manager*)arg;
     std::cout << "  Listener Accept Called " << std::endl;
+
+    evutil_make_socket_nonblocking( new_socket );
 
     event_base* worker_base;
     // Choose a worker to handle it
@@ -33,35 +36,15 @@ namespace Stewardess
       worker_base = data->_threads[ data->getNextThread() ]->data.eventBase;
     }
 
-    // Create a buffer event, bound to the tcp socket. When freed it will close the socket.
-    bufferevent* buffer_event = bufferevent_socket_new( worker_base, new_socket, BEV_OPT_CLOSE_ON_FREE );
-
     // Create the connection 
-    Connection* connection = new Connection();
-    connection->bufferEvent = buffer_event;
-    connection->server = &data->_server;
-    connection->serializer = data->_server.buildSerializer();
+    Connection* connection = new Connection( *address, data->_server, worker_base, new_socket );
     connection->readBuffer.reserve( data->_configuration.bufferSize );
-
-    // Byte-wise copy the address struct
-    std::memcpy( (void*)&connection->socketAddress, (void*)address, address_length );
-
       
     // Add the new connection to the manager
     data->addConnection( connection );
 
     // Signal that something has connected
-    connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
-
-
-    // Set the call back functions
-    bufferevent_setcb( buffer_event, bufferReadCB, bufferWriteCB, bufferEventCB, (void*)connection );
-
-    // Set the time outs for reading & writing only if they're > 0
-    bufferevent_set_timeouts( buffer_event, data->getReadTimeout(), data->getWriteTimeout() ); 
-
-    // Enable reading & writing on the buffer event
-    bufferevent_enable( buffer_event, EV_READ|EV_WRITE );
+    connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
   }
 
 
@@ -118,60 +101,66 @@ namespace Stewardess
   }
 
 
-  void workerTickTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
-  {
-    WorkerData* data = (WorkerData*)arg;
-    event_add( data->tickEvent, &data->tickTime );
-    // Do nothing. We just need to force libevent to loop around again
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   // Buffer event callback functions
 
-  void bufferReadCB( bufferevent* buffer_event, void* arg )
+  void readCB( evutil_socket_t fd, short /*flags*/, void* arg )
   {
     Connection* connection = (Connection*)arg;
-    Serializer* serializer = connection->serializer;
     Buffer& buffer = connection->readBuffer;
     std::cout << "  Buffer Read called" << std::endl;
 
-    int result;
+    ssize_t result;
+    bool good = true;
 
-    evbuffer* read_data = bufferevent_get_input( buffer_event );
-
-    while( evbuffer_get_length( read_data ) > 0 )
+    while( good )
     {
-      result = evbuffer_remove( read_data, buffer.data(), buffer.capacity() );
+      buffer.resize( 0 );
 
+      result = read( fd, buffer.data(), buffer.capacity() );
       std::cout << "Read " << result << std::endl;
 
       if ( result <= 0 )
       {
-        buffer.resize( 0 );
-        break;
+        if ( errno == EAGAIN )
+        {
+          break;
+        }
+        else if ( result == 0 ) // EOF i.e. socket closed!
+        {
+          connection->close();
+          break;
+        }
+        else
+        {
+          connection->close();
+          good = false;
+        }
       }
-
-      buffer.resize( result );
-      serializer->deserialize( &buffer );
-
-      while( ! serializer->payloadEmpty() )
+      else
       {
-        std::cout << "Triggering read event." << std::endl;
-        connection->server->onRead( connection->requestHandle(), serializer->getPayload() );
+        buffer.resize( result );
+        connection->serializer->deserialize( &buffer );
       }
     }
 
-    while ( ! serializer->bufferEmpty() )
+    if ( good )
     {
-      Buffer* buf = serializer->getBuffer();
-      bufferevent_write( buffer_event, buf->data(), buf->size() );
-      delete buf;
+      while ( ! connection->serializer->payloadEmpty() )
+      {
+        connection->server.onRead( connection->requestHandle(), connection->serializer->getPayload() );
+      }
+    }
+    else
+    {
+      std::cerr << "Read error occured: " << std::strerror( errno ) << std::endl;
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
     }
 
-    while( ! serializer->errorEmpty() )
+    while( ! connection->serializer->errorEmpty() )
     {
-      std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      std::cerr << "Serializer error occured: " << connection->serializer->getError() << std::endl;
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
     }
 
     std::cout << "  Finished reading" << std::endl;
@@ -179,94 +168,71 @@ namespace Stewardess
   }
 
 
-  void bufferWriteCB( bufferevent* buffer_event, void* data )
+  void writeCB( evutil_socket_t fd, short /*flags*/, void* arg )
   {
-    Connection* connection = (Connection*)data;
+    Connection* connection = (Connection*)arg;
     Serializer* serializer = connection->serializer;
     std::cout << "  Buffer Write called" << std::endl;
 
-    connection->server->onWrite( connection->requestHandle() );
+    ssize_t result;
+    ssize_t write_count;
+    bool good = true;
 
-    while ( ! serializer->bufferEmpty() )
-    {
-      Buffer* buf = serializer->getBuffer();
-      bufferevent_write( buffer_event, buf->data(), buf->size() );
-      delete buf;
-    }
 
     while( ! serializer->errorEmpty() )
     {
       std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
     }
 
-    connection->touchAccess();
-  }
-
-
-  void bufferEventCB( bufferevent* buffer_event, short flags, void* data )
-  {
-    Connection* connection = (Connection*)data;
-    Serializer* serializer = connection->serializer;
-
-    std::cout << "  Buffer Event called" << std::endl;
-
-    if ( flags & BEV_EVENT_CONNECTED )
+    while ( ! serializer->bufferEmpty() && good )
     {
-      std::cerr << "Connection succeeded" << std::endl;
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
-    }
-
-    if ( flags & BEV_EVENT_EOF )
-    {
-      std::cerr << "Socket closed" << std::endl;
-      connection->close();
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
-    }
-
-    if ( flags & BEV_EVENT_ERROR )
-    {
-      std::cerr << "ERROR buffer event: " << EVUTIL_SOCKET_ERROR() << std::endl;
-      connection->close();
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
-    }
-
-  //  if ( flags & BEV_EVENT_READING )
-  //  {
-  //  }
-  //
-  //  if ( flags & BEV_EVENT_WRITING )
-  //  {
-  //  }
-
-    if ( flags & BEV_EVENT_TIMEOUT )
-    {
-      if ( flags & BEV_EVENT_READING )
-      {
-        std::cerr << "Read Timeout event occured" << std::endl;
-      }
-      else if ( flags & BEV_EVENT_WRITING )
-      {
-        std::cerr << "Write Timeout event occured" << std::endl;
-      }
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Timeout );
-    }
-
-    while ( ! serializer->bufferEmpty() )
-    {
-      std::cerr << "Writing to buffer" << std::endl;
+      write_count = 0;
       Buffer* buf = serializer->getBuffer();
-      bufferevent_write( buffer_event, buf->data(), buf->size() );
+      while ( good )
+      {
+        result = write( fd, buf->data() + write_count, buf->size() - write_count );
+        std::cout << "Wrote " << result << std::endl;
+
+        if ( result <= 0 )
+        {
+          if ( errno == EAGAIN ) break;
+          else if ( result == 0 ) // EOF
+          {
+            good = false;
+            break;
+          }
+          else 
+          {
+            connection->close();
+            good = false;
+          }
+        }
+        else if ( result == (ssize_t)buf->size()-write_count ) // Wrote everything
+        {
+          break;
+        }
+        else
+        {
+          write_count += result;
+        }
+
+      }
       delete buf;
     }
 
-    while( ! serializer->errorEmpty() )
+    if ( ! good )
     {
-      std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
-      connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      std::cerr << "Write error occured " << std::strerror( errno ) << std::endl;
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
+    }
+    else
+    {
+      connection->server.onWrite( connection->requestHandle() );
+      connection->touchAccess();
     }
 
-    connection->touchAccess();
   }
 
 }

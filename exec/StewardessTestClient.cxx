@@ -17,10 +17,11 @@ int main( int, char** )
   Configuration config( PORT_NUMBER );
 
   // Configure the config
-  config.setNumberThreads( 0 );
+  config.setNumberThreads( 1 );
   config.setDefaultBufferSize( 4096 );
   config.setReadTimeout( 0 );
   config.setWriteTimeout( 1 );
+  config.setDeathTime( 1 );
   config.setTickTimeModifier( 1.0 );
   config.setCloseConnectionsOnShutdown( true );
 

@@ -23,6 +23,7 @@ int main( int, char** )
   config.setDefaultBufferSize( 4096 );
   config.setReadTimeout( 0 );
   config.setWriteTimeout( 1 );
+  config.setDeathTime( 1 );
   config.setTickTimeModifier( 1.0 );
   config.setCloseConnectionsOnShutdown( true );
   config.setRequestListener( true );

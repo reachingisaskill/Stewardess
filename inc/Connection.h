@@ -28,10 +28,15 @@ namespace Stewardess
       // Store the assigned id
       UniqueID _identifier;
 
+      // Mutex to control key status: closing, events, etc
+      std::mutex _theMutex;
 
       // Flag to trigger the destruction of the connection data
       bool _close;
-      std::mutex _closeMutex;
+
+      // Pointer to the read and write events
+      event* _readEvent;
+      event* _writeEvent;
 
 
       // Time of creation
@@ -44,7 +49,7 @@ namespace Stewardess
     public:
 
       // Create a new connection and aquire a new id.
-      Connection();
+      Connection( sockaddr, CallbackInterface&, event_base*, evutil_socket_t );
       
       // Destroy buffer event
       ~Connection();
@@ -55,19 +60,16 @@ namespace Stewardess
       Connection operator=( const Connection& ) = delete;
       Connection operator=( Connection&& ) = delete;
 
-      // Pointer to the associated bufferevent
-      bufferevent* bufferEvent;
-
       // Addres of the client bound to the socket
-      sockaddr_in socketAddress;
+      const sockaddr socketAddress;
 
       // Pointer to the server receiving the callbacks
-      CallbackInterface* server;
+      CallbackInterface& server;
 
       // Message builder
-      Serializer* serializer;
+      Serializer* const serializer;
 
-      // Read buffer
+      // Read buffer stored here so we don't need to keep re-allocating it
       Buffer readBuffer;
 
 
@@ -77,6 +79,10 @@ namespace Stewardess
 
       // Return true if its not closed
       bool isOpen();
+
+
+      // Mutex controlled write
+      void write( Payload* );
 
 
       // Return the unique id for this connection

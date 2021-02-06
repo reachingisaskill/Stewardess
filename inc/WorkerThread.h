@@ -12,7 +12,6 @@ namespace Stewardess
   struct WorkerData
   {
     event_base* eventBase;
-    event* tickEvent;
     timeval tickTime;
   };
 

@@ -193,13 +193,6 @@ namespace Stewardess
           throw std::runtime_error( "Could not create a worker event base. Unknowm error." );
         }
 
-        info->data.tickEvent = evtimer_new( info->data.eventBase, workerTickTimerCB, &info->data );
-        if ( info->data.tickEvent == nullptr )
-        {
-          throw std::runtime_error( "Could not create the worker tick event." );
-        }
-//        event_add( info->data.tickEvent, &info->data.tickTime );
-
         info->theThread = std::thread( workerThread, info->data );
         _threads.push_back( info );
       }
@@ -251,7 +244,6 @@ namespace Stewardess
       for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
       {
         (*it)->theThread.join();
-        event_free( (*it)->data.tickEvent );
         event_base_free( (*it)->data.eventBase );
         delete (*it);
       }
@@ -379,18 +371,10 @@ namespace Stewardess
       worker_base = _threads[ this->getNextThread() ]->data.eventBase;
     }
 
-    // Create a buffer event, bound to the tcp socket. When freed it will close the socket.
-    bufferevent* buffer_event = bufferevent_socket_new( worker_base, new_socket, BEV_OPT_CLOSE_ON_FREE );
-
     // Create the connection 
-    Connection* connection = new Connection();
-    connection->bufferEvent = buffer_event;
-    connection->server = &_server;
-    connection->serializer = _server.buildSerializer();
+    Connection* connection = new Connection( *address_answer->ai_addr, _server, worker_base, new_socket );
     connection->readBuffer.reserve( _configuration.bufferSize );
 
-    // Byte-wise copy the address struct
-    std::memcpy( (void*)&connection->socketAddress, (void*)address_answer->ai_addr, address_answer->ai_addrlen );
 
     // Clear the address memory
     while( address_answer != nullptr )
@@ -405,17 +389,7 @@ namespace Stewardess
     this->addConnection( connection );
 
     // Signal that something has connected
-    connection->server->onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
-
-
-    // Set the call back functions
-    bufferevent_setcb( buffer_event, bufferReadCB, bufferWriteCB, bufferEventCB, (void*)connection );
-
-    // Set the time outs for reading & writing only if they're > 0
-    bufferevent_set_timeouts( buffer_event, this->getReadTimeout(), this->getWriteTimeout() ); 
-
-    // Enable reading & writing on the buffer event
-    bufferevent_enable( buffer_event, EV_READ|EV_WRITE );
+    connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
 
     // Return the handle
     return connection->requestHandle();

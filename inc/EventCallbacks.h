@@ -24,15 +24,12 @@ namespace Stewardess
   void killTimerCB( evutil_socket_t, short, void* );
   void tickTimerCB( evutil_socket_t, short, void* );
 
-  void workerTickTimerCB( evutil_socket_t, short, void* );
-
 
   ////////////////////////////////////////////////////////////////////////////////
-  // Declare the bufferevent call back functions
+  // Declare the event call back functions
 
-  void bufferReadCB( bufferevent*, void* );
-  void bufferWriteCB( bufferevent*, void* );
-  void bufferEventCB( bufferevent*, short, void* );
+  void readCB( evutil_socket_t, short, void* );
+  void writeCB( evutil_socket_t, short, void* );
 
 }
 
