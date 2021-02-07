@@ -15,12 +15,17 @@ namespace Stewardess
 
   class Manager
   {
+    // Connection needs to know some things as the callback argument
+    friend class Connection;
+
     // Callback functions are friends
     friend void listenerAcceptCB( evconnlistener*, evutil_socket_t, sockaddr*, int, void* );
     friend void listenerErrorCB( evconnlistener*, void* );
     friend void interruptSignalCB( evutil_socket_t, short, void* );
     friend void killTimerCB( evutil_socket_t, short, void* );
     friend void tickTimerCB( evutil_socket_t, short, void* );
+    friend void readCB( evutil_socket_t, short, void* );
+    friend void writeCB( evutil_socket_t, short, void* );
 
 
     private:

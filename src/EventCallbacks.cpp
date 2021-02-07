@@ -38,14 +38,14 @@ namespace Stewardess
     }
 
     // Create the connection 
-    Connection* connection = new Connection( *address, data->_server, worker_base, new_socket );
+    Connection* connection = new Connection( *address, *data, worker_base, new_socket );
     connection->readBuffer.reserve( data->_configuration.bufferSize );
       
     // Add the new connection to the manager
     data->addConnection( connection );
 
     // Signal that something has connected
-    connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
+    data->_server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
   }
 
 
@@ -129,7 +129,7 @@ namespace Stewardess
         {
           DEBUG_STREAM( "Stewardess::SocketRead" ) << "End of file. Connection: " << connection->getIDNumber();
           connection->close();
-          connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
+          connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
           break;
         }
         else if ( errno == EAGAIN )
@@ -141,7 +141,7 @@ namespace Stewardess
         {
           ERROR_STREAM( "Stewardess::SocketRead" ) << "Connection Error. Connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
           connection->close();
-          connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+          connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
           break;
         }
       }
@@ -156,14 +156,14 @@ namespace Stewardess
     while ( ! connection->serializer->payloadEmpty() )
     {
       DEBUG_LOG( "Stewardess::SocketRead", "Calling on read handler" );
-      connection->server.onRead( connection->requestHandle(), connection->serializer->getPayload() );
+      connection->manager._server.onRead( connection->requestHandle(), connection->serializer->getPayload() );
     }
 
     while( ! connection->serializer->errorEmpty() )
     {
       const char* error = connection->serializer->getError();
       ERROR_STREAM( "Stewardess::SocketRead" ) << "Serializer error occured: " << error;
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
+      connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
     }
 
     DEBUG_LOG( "Stewardess::SocketRead", "Socket Read Finished" );
@@ -185,7 +185,7 @@ namespace Stewardess
     {
       const char* error = connection->serializer->getError();
       ERROR_STREAM( "Stewardess::SocketWrite" ) << "Serializer error occured: " << error;
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
+      connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
     }
 
     while ( ! serializer->bufferEmpty() && good )
@@ -209,7 +209,7 @@ namespace Stewardess
           {
             WARN_STREAM( "Stewardess::SocketWrite" ) << "Connection closed during write operation: " << connection->getIDNumber();
             connection->close();
-            connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+            connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
             good = false;
             break;
           }
@@ -217,7 +217,7 @@ namespace Stewardess
           {
             ERROR_STREAM( "Stewardess::WriteSocket" ) << "An error occured on connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
             connection->close();
-            connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+            connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
             good = false;
             break;
           }
@@ -237,7 +237,7 @@ namespace Stewardess
     if ( good )
     {
       DEBUG_LOG( "Stewardess::SocketWrite", "Calling on write handler" );
-      connection->server.onWrite( connection->requestHandle() );
+      connection->manager._server.onWrite( connection->requestHandle() );
     }
 
     DEBUG_LOG( "Stewardess::SocketWrite", "Socket Write Finished" );

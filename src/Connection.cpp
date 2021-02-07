@@ -8,11 +8,11 @@
 namespace Stewardess
 {
 
-  UniqueID Connection::_idCounter = 0;
+  HugeID Connection::_idCounter = 0;
   std::mutex Connection::_idCounterMutex;
 
 
-  Connection::Connection( sockaddr address, CallbackInterface& server, event_base* worker_base, evutil_socket_t new_socket ) :
+  Connection::Connection( sockaddr address, Manager& manager, event_base* worker_base, evutil_socket_t new_socket ) :
     _references(),
     _idNumber( 0 ),
     _identifier( 0 ),
@@ -22,8 +22,8 @@ namespace Stewardess
     _connectionTime( std::chrono::system_clock::now() ),
     _lastAccess( std::chrono::system_clock::now() ),
     socketAddress( address ),
-    server( server ),
-    serializer( server.buildSerializer() ),
+    manager( manager ),
+    serializer( manager._server.buildSerializer() ),
     readBuffer()
   {
     {
@@ -61,6 +61,8 @@ namespace Stewardess
     _close = true;
     event_del( _readEvent );
     event_del( _writeEvent );
+
+    manager.closeConnection( this );
   }
 
 

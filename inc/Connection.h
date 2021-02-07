@@ -4,6 +4,7 @@
 
 #include "Definitions.h"
 #include "LibeventIncludes.h"
+#include "Manager.h"
 #include "Handle.h"
 #include "Buffer.h"
 
@@ -19,14 +20,14 @@ namespace Stewardess
   class Connection
   {
     private:
-      static UniqueID _idCounter;
+      static HugeID _idCounter;
       static std::mutex _idCounterMutex;
 
       // Count the number of references to this data
       ReferenceCounter _references;
 
       // Store the creation id
-      UniqueID _idNumber;
+      HugeID _idNumber;
 
       // Store the assigned id
       UniqueID _identifier;
@@ -52,7 +53,7 @@ namespace Stewardess
     public:
 
       // Create a new connection and aquire a new id.
-      Connection( sockaddr, CallbackInterface&, event_base*, evutil_socket_t );
+      Connection( sockaddr, Manager&, event_base*, evutil_socket_t );
       
       // Destroy buffer event
       ~Connection();
@@ -66,8 +67,8 @@ namespace Stewardess
       // Addres of the client bound to the socket
       const sockaddr socketAddress;
 
-      // Pointer to the server receiving the callbacks
-      CallbackInterface& server;
+      // Manager reference
+      Manager& manager;
 
       // Message builder
       Serializer* const serializer;

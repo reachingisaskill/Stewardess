@@ -41,7 +41,8 @@ namespace Stewardess
   typedef std::chrono::seconds Seconds;
 
   // Really big unique id type
-  typedef long long unsigned int UniqueID;
+  typedef long long unsigned int HugeID;
+  typedef size_t UniqueID;
 
   // Common arry-like structures
   typedef std::map< size_t, Connection* > ConnectionMap;

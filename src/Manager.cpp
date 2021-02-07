@@ -376,7 +376,7 @@ namespace Stewardess
     }
 
     // Create the connection 
-    Connection* connection = new Connection( *address_answer->ai_addr, _server, worker_base, new_socket );
+    Connection* connection = new Connection( *address_answer->ai_addr, *this, worker_base, new_socket );
     connection->readBuffer.reserve( _configuration.bufferSize );
 
 
@@ -393,7 +393,7 @@ namespace Stewardess
     this->addConnection( connection );
 
     // Signal that something has connected
-    connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
+    _server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
 
     // Return the handle
     return connection->requestHandle();
@@ -457,19 +457,16 @@ namespace Stewardess
   void Manager::addConnection( Connection* connection )
   {
     GuardLock lk( _connectionsMutex );
-    _connections[ connection->getIdentifier() ] = connection;
+    _connections[ connection->getIDNumber() ] = connection;
   }
 
 
   void Manager::closeConnection( Connection* connection )
   {
-    // Mark the flag
-    connection->close();
-
     // Remove it from the active map
     {
       GuardLock lk( _connectionsMutex );
-      ConnectionMap::iterator it = _connections.find( connection->getIdentifier() );
+      ConnectionMap::iterator it = _connections.find( connection->getIDNumber() );
       if ( it != _connections.end() )
       {
         _connections.erase( it );
