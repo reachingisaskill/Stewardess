@@ -47,10 +47,6 @@ namespace Stewardess
       ~Handle();
 
 
-      // Return the ID number
-      size_t getIDNumber() const;
-
-
       // Return the address
       std::string getIPAddress() const;
 
@@ -69,6 +65,18 @@ namespace Stewardess
 
       // Writes a payload to the output buffer. Will fail if it is closed
       void write( Payload* ) const;
+
+
+      // Returns the creation number
+      UniqueID getIDNumber() const;
+
+
+      // Returns the user id number
+      UniqueID getIdentifier() const;
+
+
+      // Sets the user id number
+      void setIdentifier( UniqueID );
 
 
       // Return the timestamp when the connection was opened

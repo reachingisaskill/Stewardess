@@ -24,7 +24,7 @@ namespace Stewardess
 
 
       // Called when a connection event occurs
-      virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
+      virtual void onConnectionEvent( Handle, ConnectionEvent, const char* ) override;
 
   };
 

@@ -25,6 +25,9 @@ namespace Stewardess
       // Count the number of references to this data
       ReferenceCounter _references;
 
+      // Store the creation id
+      UniqueID _idNumber;
+
       // Store the assigned id
       UniqueID _identifier;
 
@@ -84,9 +87,16 @@ namespace Stewardess
       // Mutex controlled write
       void write( Payload* );
 
+    
+      // Return the ID number of its creation
+      UniqueID getIDNumber() const { return _idNumber; }
 
-      // Return the unique id for this connection
+
+      // Return the unique user id for this connection
       UniqueID getIdentifier() const { return _identifier; }
+
+      // Set the unique user id
+      void setIdentifier( UniqueID );
 
       // Returns a new connection object
       Handle requestHandle();

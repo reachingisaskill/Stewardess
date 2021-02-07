@@ -23,7 +23,8 @@ namespace Stewardess
     Manager* data = (Manager*)arg;
     std::cout << "  Listener Accept Called " << std::endl;
 
-    evutil_make_socket_nonblocking( new_socket );
+    // Make the socket non-blocking - this happens by default when using a listener
+//    evutil_make_socket_nonblocking( new_socket );
 
     event_base* worker_base;
     // Choose a worker to handle it
@@ -111,7 +112,7 @@ namespace Stewardess
     std::cout << "  Buffer Read called" << std::endl;
 
     ssize_t result;
-    bool good = true;
+    bool good = connection->isOpen();
 
     while( good )
     {
@@ -122,48 +123,47 @@ namespace Stewardess
 
       if ( result <= 0 )
       {
-        if ( errno == EAGAIN )
+        if ( result == 0 ) // EOF i.e. socket closed!
         {
+          DEBUG_STREAM( "SocketRead" ) << "End of file. Connection: " << connection->getIDNumber();
+          connection->close();
+          connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
           break;
         }
-        else if ( result == 0 ) // EOF i.e. socket closed!
+        else if ( errno == EAGAIN )
         {
-          connection->close();
+          std::cout << "EAGAIN" << std::endl;
           break;
         }
         else
         {
+          ERROR_STREAM( "SocketRead" ) << "Connection Error. Connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
           connection->close();
-          good = false;
+          connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+          break;
         }
       }
       else
       {
+        std::cout << "Deserialize" << std::endl;
         buffer.resize( result );
         connection->serializer->deserialize( &buffer );
       }
     }
 
-    if ( good )
+    while ( ! connection->serializer->payloadEmpty() )
     {
-      while ( ! connection->serializer->payloadEmpty() )
-      {
-        connection->server.onRead( connection->requestHandle(), connection->serializer->getPayload() );
-      }
-    }
-    else
-    {
-      std::cerr << "Read error occured: " << std::strerror( errno ) << std::endl;
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      connection->server.onRead( connection->requestHandle(), connection->serializer->getPayload() );
     }
 
     while( ! connection->serializer->errorEmpty() )
     {
-      std::cerr << "Serializer error occured: " << connection->serializer->getError() << std::endl;
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      const char* error = connection->serializer->getError();
+      ERROR_STREAM( "SocketRead" ) << "Serializer error occured: " << error;
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
     }
 
-    std::cout << "  Finished reading" << std::endl;
+    std::cout << "  Buffer Read finished" << std::endl;
     connection->touchAccess();
   }
 
@@ -176,13 +176,13 @@ namespace Stewardess
 
     ssize_t result;
     ssize_t write_count;
-    bool good = true;
-
+    bool good = connection->isOpen();
 
     while( ! serializer->errorEmpty() )
     {
-      std::cerr << "Serializer error occured: " << serializer->getError() << std::endl;
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
+      const char* error = connection->serializer->getError();
+      ERROR_STREAM( "SocketRead" ) << "Serializer error occured: " << error;
+      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
     }
 
     while ( ! serializer->bufferEmpty() && good )
@@ -196,16 +196,27 @@ namespace Stewardess
 
         if ( result <= 0 )
         {
-          if ( errno == EAGAIN ) break;
-          else if ( result == 0 ) // EOF
+          if ( result == 0 ) // EOF
           {
+            ERROR_LOG( "WriteSocket", "Unexpected end of File" );
+            good = false;
+            break;
+          }
+          else if ( errno == EAGAIN )
+          {
+            DEBUG_STREAM( "WriteSocket" ) << "Connection closed. Connection: " << connection->getIDNumber();
+            connection->close();
+            connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
             good = false;
             break;
           }
           else 
           {
+            ERROR_STREAM( "WriteSocket" ) << "An error occured on connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
             connection->close();
+            connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
             good = false;
+            break;
           }
         }
         else if ( result == (ssize_t)buf->size()-write_count ) // Wrote everything
@@ -216,23 +227,17 @@ namespace Stewardess
         {
           write_count += result;
         }
-
       }
       delete buf;
     }
 
-    if ( ! good )
-    {
-      std::cerr << "Write error occured " << std::strerror( errno ) << std::endl;
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Error );
-      connection->server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
-    }
-    else
+    if ( good )
     {
       connection->server.onWrite( connection->requestHandle() );
-      connection->touchAccess();
     }
 
+    std::cout << "  Buffer Write finished" << std::endl;
+    connection->touchAccess();
   }
 
 }

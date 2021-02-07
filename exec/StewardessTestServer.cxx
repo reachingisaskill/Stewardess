@@ -15,6 +15,15 @@ using namespace Stewardess;
 
 int main( int, char** )
 {
+  logtastic::init();
+  logtastic::setLogFileDirectory( "./log" );
+  logtastic::setLogFile( "server_tests.log" );
+  logtastic::setMaxFileSize( 100000 );
+  logtastic::setMaxNumberFiles( 1 );
+  logtastic::setPrintToScreenLimit( logtastic::warn );
+
+  logtastic::start( "Stewardess Server Test", STEWARDESS_VERSION_STRING );
+
   std::cout << "Building Config" << std::endl;
   Configuration config( PORT_NUMBER );
 
@@ -31,7 +40,6 @@ int main( int, char** )
 
   std::cout << "Building server" << std::endl;
   TestServer the_server;
-
 
   Manager manager( config, the_server );
 

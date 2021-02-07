@@ -57,7 +57,7 @@ namespace Stewardess
 
 
       // Called when a connection event occurs
-      virtual void onConnectionEvent( Handle, ConnectionEvent ) {}
+      virtual void onConnectionEvent( Handle, ConnectionEvent, const char* = nullptr ) {}
 
 
       // Called when a server event occurs

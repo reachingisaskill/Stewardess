@@ -14,6 +14,7 @@ namespace Stewardess
 
   Connection::Connection( sockaddr address, CallbackInterface& server, event_base* worker_base, evutil_socket_t new_socket ) :
     _references(),
+    _idNumber( 0 ),
     _identifier( 0 ),
     _close( false ),
     _readEvent( nullptr ),
@@ -27,7 +28,7 @@ namespace Stewardess
   {
     {
       GuardLock lk( _idCounterMutex );
-      _identifier = _idCounter++;
+      _idNumber = _idCounter++;
     }
 
     {
@@ -37,6 +38,8 @@ namespace Stewardess
 
       event_add( _readEvent, nullptr );
     }
+
+    std::cout << "Created connection " << _idNumber << std::endl;
   }
 
 
@@ -48,6 +51,7 @@ namespace Stewardess
       event_free( _writeEvent );
     if ( serializer != nullptr )
       delete serializer;
+    std::cout << "Deleted connection " << _idNumber << std::endl;
   }
 
 
@@ -72,6 +76,20 @@ namespace Stewardess
     GuardLock lk( _theMutex );
     serializer->serialize( p );
     event_add( _writeEvent, nullptr );
+  }
+
+
+  void Connection::setIdentifier( UniqueID num )
+  {
+    GuardLock lk( _theMutex );
+    if ( _identifier == 0 )
+    {
+      _identifier = num;
+    }
+    else
+    {
+      WARN_STREAM( "Connection::setIdentifier" ) << "Attempting to set Identifier when one already exists for connection : " << _idNumber;
+    }
   }
 
 

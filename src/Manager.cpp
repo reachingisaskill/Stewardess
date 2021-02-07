@@ -130,20 +130,16 @@ namespace Stewardess
     // Give the server a reference to this manager.
     _server._manager = this;
     
-
     // Server starts now!
     _serverStartTime = std::chrono::system_clock::now();
-
 
     // Configure the socket address
     _socketAddress.sin_family = AF_INET;
     _socketAddress.sin_addr.s_addr = INADDR_ANY;
     _socketAddress.sin_port = htons( _configuration.portNumber );
 
-
     try
     {
-
       // Configure the event base for the control thread
       std::cout << "Creating event_base" << std::endl;
       _eventBase = event_base_new();
@@ -360,6 +356,9 @@ namespace Stewardess
       std::cerr << "Failed to connect to server " << host << ":" << port << std::endl;
       return Handle();
     }
+
+    // Make the socket non-blocking
+    evutil_make_socket_nonblocking( new_socket );
 
     event_base* worker_base;
     if ( this->singleThreadMode() )

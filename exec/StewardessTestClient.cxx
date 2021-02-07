@@ -2,6 +2,8 @@
 #define PORT_NUMBER 7007
 #define HOST_ADDRESS "0.0.0.0"
 
+#include "logtastic.h"
+
 #include "Manager.h"
 #include "Configuration.h"
 #include "TestClient.h"
@@ -13,6 +15,15 @@ using namespace Stewardess;
 
 int main( int, char** )
 {
+  logtastic::init();
+  logtastic::setLogFileDirectory( "./log" );
+  logtastic::setLogFile( "client_tests.log" );
+  logtastic::setMaxFileSize( 100000 );
+  logtastic::setMaxNumberFiles( 1 );
+  logtastic::setPrintToScreenLimit( logtastic::warn );
+
+  logtastic::start( "Stewardess Client Test", STEWARDESS_VERSION_STRING );
+
   std::cout << "Building Config" << std::endl;
   Configuration config( PORT_NUMBER );
 
@@ -26,14 +37,14 @@ int main( int, char** )
   config.setCloseConnectionsOnShutdown( true );
 
 
-  std::cout << "Building server" << std::endl;
+  std::cout << "Building client" << std::endl;
   TestClient the_client;
-
 
   Manager manager( config, the_client );
 
   manager.run();
 
+  logtastic::stop();
   return 0;
 }
 

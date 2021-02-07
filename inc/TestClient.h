@@ -18,6 +18,8 @@ namespace Stewardess
       Handle _handle;
       unsigned long _tickCounter;
 
+      std::atomic<bool> _alive;
+
     public:
       TestClient();
 
@@ -39,7 +41,7 @@ namespace Stewardess
 
 
       // Called when a connection event occurs
-      virtual void onConnectionEvent( Handle, ConnectionEvent ) override;
+      virtual void onConnectionEvent( Handle, ConnectionEvent, const char* ) override;
 
 
       virtual void onTick( Milliseconds ) override;

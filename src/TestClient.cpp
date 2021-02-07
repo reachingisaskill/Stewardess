@@ -8,7 +8,8 @@ namespace Stewardess
   TestClient::TestClient() :
     _counter( 0 ),
     _handle(),
-    _tickCounter( 0 )
+    _tickCounter( 0 ),
+    _alive( false )
   {
   }
 
@@ -20,6 +21,10 @@ namespace Stewardess
     {
       manager().abort();
     }
+    else
+    {
+      _alive = true;
+    }
   }
 
 
@@ -30,7 +35,7 @@ namespace Stewardess
   }
 
 
-  void TestClient::onConnectionEvent( Handle connection, ConnectionEvent event )
+  void TestClient::onConnectionEvent( Handle connection, ConnectionEvent event, const char* error )
   {
     switch( event )
     {
@@ -43,6 +48,24 @@ namespace Stewardess
       }
       break;
 
+      case ConnectionEvent::Disconnect :
+      {
+        std::cout << "Disconnection Event" << std::endl;
+
+        _alive = false;
+        manager().shutdown();
+      }
+      break;
+
+      case ConnectionEvent::DisconnectError :
+      {
+        std::cout << "Unexpected Disconnection Event: " << error << std::endl;
+
+        _alive = false;
+        manager().shutdown();
+      }
+      break;
+
       default:
       break;
     }
@@ -51,13 +74,16 @@ namespace Stewardess
 
   void TestClient::onTick( Milliseconds time )
   {
-    std::cout << "TICK : " << time.count() << std::endl;
-    _tickCounter += time.count();
-    if ( _tickCounter > 5000 )
+    if ( _alive )
     {
-      _tickCounter -= 5000;
-      TestPayload p( "Me again" );
-      _handle.write( &p );
+      std::cout << "TICK : " << time.count() << std::endl;
+      _tickCounter += time.count();
+      if ( _tickCounter > 5000 )
+      {
+        _tickCounter -= 5000;
+        TestPayload p( "Me again" );
+        _handle.write( &p );
+      }
     }
   }
 

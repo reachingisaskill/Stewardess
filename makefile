@@ -47,7 +47,7 @@ LIB_NAME = Stewardess
 
 # Includes and Libraries
 INC_FLAGS += -I${INC_DIR}
-LIB_FLAGS += -levent -lpthread -levent_pthreads
+LIB_FLAGS += -levent -lpthread -levent_pthreads -llogtastic
 
 
 # Compile-Time Definitions

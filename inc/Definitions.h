@@ -15,6 +15,9 @@
 #include "logtastic.h"
 
 
+#define STEWARDESS_VERSION_STRING "0.1.0"
+
+
 namespace Stewardess
 {
 
@@ -53,7 +56,7 @@ namespace Stewardess
   ////////////////////////////////////////////////////////////////////////////////
   // Connection event enumeration
 
-  enum class ConnectionEvent { Connect, Disconnect, Timeout, Error, ReadError, WriteError };
+  enum class ConnectionEvent { Connect, Disconnect, DisconnectError, Timeout, SerializationError };
 
   enum class ServerEvent { Shutdown };
 }

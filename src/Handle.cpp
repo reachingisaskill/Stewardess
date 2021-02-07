@@ -27,12 +27,6 @@ namespace Stewardess
   }
 
 
-  size_t Handle::getIDNumber() const
-  {
-    return _data->getIdentifier();
-  }
-
-
   std::string Handle::getIPAddress() const
   {
     if ( _data->socketAddress.sa_family == AF_INET )
@@ -78,6 +72,24 @@ namespace Stewardess
   void Handle::write( Payload* p ) const
   {
     _data->write( p );
+  }
+
+
+  UniqueID Handle::getIDNumber() const
+  {
+    return _data->getIDNumber();
+  }
+
+
+  UniqueID Handle::getIdentifier() const
+  {
+    return _data->getIdentifier();
+  }
+
+
+  void Handle::setIdentifier( UniqueID id )
+  {
+    _data->setIdentifier( id );
   }
 
 

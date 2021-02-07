@@ -16,9 +16,31 @@ namespace Stewardess
   }
 
 
-  void TestServer::onConnectionEvent( Handle, ConnectionEvent )
+  void TestServer::onConnectionEvent( Handle /*handle*/, ConnectionEvent event, const char* error )
   {
-    std::cout << "Connection Event" << std::endl;
+    switch( event )
+    {
+      case ConnectionEvent::Connect :
+      {
+        std::cout << "Connection Event" << std::endl;
+      }
+      break;
+
+      case ConnectionEvent::Disconnect :
+      {
+        std::cout << "Disconnection Event" << std::endl;
+      }
+      break;
+
+      case ConnectionEvent::DisconnectError :
+      {
+        std::cout << "Unexpected Disconnection Event: " << error << std::endl;
+      }
+      break;
+
+      default:
+      break;
+    }
   }
 
 }
