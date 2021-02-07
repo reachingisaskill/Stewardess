@@ -58,7 +58,7 @@ namespace Stewardess
 
   enum class ConnectionEvent { Connect, Disconnect, DisconnectError, Timeout, SerializationError };
 
-  enum class ServerEvent { Shutdown };
+  enum class ServerEvent { Shutdown, ListenerError };
 }
 
 #endif // STEWARDESS_DEFINITIONS_H_

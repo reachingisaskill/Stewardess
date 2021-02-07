@@ -7,12 +7,12 @@ namespace Stewardess
 
   void TestServer::onRead( Handle c, Payload* p )
   {
-    std::cout << "RECEIVED: From connection: " << c.getIDNumber() << '\n' << ((TestPayload*)p)->getMessage() << std::endl;
-    TestPayload reply( std::string( "Cheers bruh" ) );
-
-    c.write( &reply );
-
+    std::cout << "RECEIVED: From connection: " << c.getIDNumber() <<  "  --  " << ((TestPayload*)p)->getMessage() << std::endl;
     delete p;
+
+    std::cout << "SENDING: To connection: " << c.getIDNumber() <<  "  --  Cheers bruh" << std::endl;
+    TestPayload reply( std::string( "Cheers bruh" ) );
+    c.write( &reply );
   }
 
 
@@ -41,6 +41,12 @@ namespace Stewardess
       default:
       break;
     }
+  }
+
+
+  void TestServer::onTick( Milliseconds /*time*/ )
+  {
+    std::cout << std::endl;
   }
 
 }

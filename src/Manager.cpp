@@ -44,7 +44,7 @@ namespace Stewardess
     if ( _instanceCount == 0 )
     {
       if ( evthread_use_pthreads() != 0 )
-        std::cerr << "Could not enable pthreads?!" << std::endl;
+        ERROR_LOG( "Stewardess::Manager", "Could not enable pthreads?!" );
     }
     _instanceCount += 1;
 
@@ -57,7 +57,6 @@ namespace Stewardess
     std::lock_guard<std::mutex> lock( _instanceCountMutex );
     if ( (--_instanceCount) == 0 )
     {
-      std::cout << "No more managers. Global libevent shutdown." << std::endl;
       libevent_global_shutdown();
     }
   }
@@ -141,7 +140,7 @@ namespace Stewardess
     try
     {
       // Configure the event base for the control thread
-      std::cout << "Creating event_base" << std::endl;
+      INFO_LOG( "Stewardess::Manager", "Configuring network logic." );
       _eventBase = event_base_new();
       if ( _eventBase == nullptr )
       {
@@ -177,7 +176,7 @@ namespace Stewardess
 
 
       // Create the worker threads
-      std::cout << "Intialising workers." << std::endl;
+      INFO_LOG( "Stewardess::Manager", "Intialising worker threads." );
       for ( unsigned int i = 0; i < _configuration.numThreads; ++i )
       {
         ThreadInfo* info = new ThreadInfo();
@@ -197,7 +196,7 @@ namespace Stewardess
       // Build a listener if wanted
       if ( _configuration.requestListener )
       {
-        std::cout << "Creating listener" << std::endl;
+        INFO_STREAM( "Stewardess::Manager" ) << "Configuring listener on port " << _configuration.portNumber;
         _listener = evconnlistener_new_bind( _eventBase, listenerAcceptCB, (void*)this,
                                              LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
                                              (sockaddr*)&_socketAddress, sizeof(_socketAddress) );
@@ -212,7 +211,7 @@ namespace Stewardess
       _tickTimeStamp = std::chrono::system_clock::now();
 
       // Start the libevent loop using the base event
-      std::cout << "Dispatching primary event" << std::endl;
+      INFO_LOG( "Stewardess::Manager", "Operation start." );
 
       _server.onStart();
       if ( ! _abort )
@@ -220,6 +219,8 @@ namespace Stewardess
         event_base_dispatch( _eventBase );
       }
       _server.onStop();
+
+      INFO_LOG( "Stewardess::Manager", "Operation stopped." );
 
       // Delete all the outstanding connections
       for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
@@ -236,7 +237,7 @@ namespace Stewardess
 
 
       // Join all the worker threads.
-      std::cout << "Joining worker threads" << std::endl;
+      INFO_LOG( "Stewardess::Manager", "Joining worker threads" );
       for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
       {
         (*it)->theThread.join();
@@ -262,6 +263,8 @@ namespace Stewardess
 
   void Manager::shutdown()
   {
+    INFO_LOG( "Stewardess::Manager", "Shutdown requested" );
+
     // Make the death timer pending
     event_add( _deathEvent, &_configuration.deathTime );
 
@@ -281,6 +284,8 @@ namespace Stewardess
 
   void Manager::abort()
   {
+    INFO_LOG( "Stewardess::Manager", "Aborting" );
+
     // Leave a flag for things to check
     _abort = true;
 
@@ -324,7 +329,7 @@ namespace Stewardess
     int result = evutil_getaddrinfo( host.c_str(), port.c_str(), &address_hints, &address_answer );
     if ( result != 0 )
     {
-      std::cerr << "Could not resolve hostname" << std::endl;
+      ERROR_STREAM( "Stewardess::Manager" ) << "Could not resolve hostname: " << host;
       return Handle();
     }
 
@@ -338,12 +343,12 @@ namespace Stewardess
         free( address_answer );
         address_answer = temp;
       }
-      std::cerr << "Could not create a socket" << std::endl;
+      ERROR_LOG( "Stewardess::Manager", "Failed to create a socket" );
       return Handle();
     }
 
     // Try to connect to the remote host
-    std::cout << "Connecting to host." << std::endl;
+    INFO_STREAM( "Stewardess::Manager" ) << "Connecting to host: " << host;
     if ( connect( new_socket, address_answer->ai_addr, address_answer->ai_addrlen ) )
     {
       EVUTIL_CLOSESOCKET( new_socket );
@@ -353,7 +358,7 @@ namespace Stewardess
         free( address_answer );
         address_answer = temp;
       }
-      std::cerr << "Failed to connect to server " << host << ":" << port << std::endl;
+      ERROR_STREAM( "Stewardess::Manager" ) << "Failed to connect to server " << host << ":" << port;
       return Handle();
     }
 

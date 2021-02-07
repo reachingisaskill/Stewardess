@@ -21,6 +21,8 @@ int main( int, char** )
   logtastic::setMaxFileSize( 100000 );
   logtastic::setMaxNumberFiles( 1 );
   logtastic::setPrintToScreenLimit( logtastic::warn );
+  logtastic::setEnableSignalHandling( false );
+  logtastic::setFlushOnEveryCall( true );
 
   logtastic::start( "Stewardess Client Test", STEWARDESS_VERSION_STRING );
 

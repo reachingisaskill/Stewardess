@@ -8,7 +8,7 @@
 namespace Stewardess
 {
 
-  UniqueID Connection::_idCounter;
+  UniqueID Connection::_idCounter = 0;
   std::mutex Connection::_idCounterMutex;
 
 
@@ -39,7 +39,7 @@ namespace Stewardess
       event_add( _readEvent, nullptr );
     }
 
-    std::cout << "Created connection " << _idNumber << std::endl;
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Created connection " << _idNumber;
   }
 
 
@@ -51,7 +51,7 @@ namespace Stewardess
       event_free( _writeEvent );
     if ( serializer != nullptr )
       delete serializer;
-    std::cout << "Deleted connection " << _idNumber << std::endl;
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Deleted connection " << _idNumber;
   }
 
 

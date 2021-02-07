@@ -61,7 +61,7 @@ namespace Stewardess
 
 
       // Called when a server event occurs
-      virtual void onEvent( ServerEvent ) {}
+      virtual void onEvent( ServerEvent, const char* = nullptr ) {}
 
 
       // Called on every server 'tick'

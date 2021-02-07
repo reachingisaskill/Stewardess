@@ -26,6 +26,9 @@ namespace Stewardess
       // Called when a connection event occurs
       virtual void onConnectionEvent( Handle, ConnectionEvent, const char* ) override;
 
+
+      // Called every server 'tick' with the elapsed time
+      virtual void onTick( Milliseconds ) override;
   };
 
 }
