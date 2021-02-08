@@ -89,6 +89,10 @@ namespace Stewardess
       constexpr iterator end() { return &_data[_size]; }
       constexpr const_iterator end() const { return &_data[_size]; }
 
+
+      // Useful for debugging
+      std::string getString() const;
+
   };
 
 

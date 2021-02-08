@@ -106,5 +106,16 @@ namespace Stewardess
     _size = new_size;
   }
 
+
+  std::string Buffer::getString() const
+  {
+    std::string result;
+    for ( size_t i = 0; i < _size; ++i )
+    {
+      result.push_back( _data[i] );
+    }
+    return result;
+  }
+
 }
 
