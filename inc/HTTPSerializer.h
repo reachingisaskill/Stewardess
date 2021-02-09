@@ -38,19 +38,20 @@ namespace Stewardess
     friend class HTTPSerializer;
 
     public:
-      typedef std::pair< std::string, std::string > HeaderField;
-      typedef std::vector<HeaderFields> HeaderData;
+      typedef std::map<std::string, std::string> HeaderData;
 
-      enum Method { Response, Get, Post };
+      enum MethodType { Response, Get, Post };
 
-      enum Response { Ok, NotFound };
+      enum ResponseType { Ok = 200, NotFound = 404 };
 
     private:
-      Method _method;
+      MethodType _method;
 
       std::string _request;
 
-      Response _response;
+      std::string _version;
+
+      ResponseType _response;
 
       HeaderData _header;
 
@@ -62,14 +63,19 @@ namespace Stewardess
     public:
       HTTPPayload();
 
-      HTTPPayload( std::string, std::string );
+      HTTPPayload( ResponseType, std::string );
 
 
-      Method getMethod() const { return _method; }
+      void setHeader( std::string, std::string );
 
-      const HeaderData& getHeader() const { return _header; }
+
+      MethodType getMethod() const { return _method; }
+
+      std::string getHeader( std::string ) const;
 
       const std::string& getBody() const { return _body; }
+
+      std::string print() const;
 
   };
 

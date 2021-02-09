@@ -11,6 +11,29 @@ namespace Stewardess
 {
   class Buffer
   {
+    public:
+    const size_t MaxChunkSize = 4096;
+
+    struct Chunk
+    {
+      size_t capacity;
+      size_t size;
+
+      Chunk* next;
+
+      char* data;
+
+      Chunk( size_t, Chunk*, Chunk* );
+      ~Chunk();
+
+      void reallocate( size_t );
+
+      Chunk( const Chunk& ) = delete;
+      Chunk( const Chunk&& ) = delete;
+      Chunk& operator=( const Chunk& ) = delete;
+      Chunk& operator=( const Chunk&& ) = delete;
+    };
+
     public :
       // Iterator types are trivial
       typedef char* iterator;
@@ -19,10 +42,23 @@ namespace Stewardess
     private:
       // To total accesible length
       size_t _capacity;
-      // The raw data
-      char* _data;
-      // The length of the raw data
+      // The used length of the raw data
       size_t _size;
+
+      // First chunk
+      Chunk* _start;
+
+      // Last chunk
+      Chunk* _finish;
+
+      // Allocate the capacity
+      void allocate( size_t );
+
+      // Reallocate, copying the data
+      void reallocate( size_t );
+
+      // Clear all the chunks
+      void deallocate( Chunk* = nullptr );
 
     public:
 
@@ -40,7 +76,7 @@ namespace Stewardess
       Buffer( const Buffer& );
       Buffer& operator=( const Buffer& );
 
-      // Move the data pointer
+      // Move the data pointers
       Buffer( Buffer&& ) = default;
       Buffer& operator=( Buffer&& );
 
