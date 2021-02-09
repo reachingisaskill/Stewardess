@@ -4,6 +4,8 @@
 
 #include "Definitions.h"
 
+#include <utility>
+#include <string>
 #include <cstring>
 
 
@@ -11,39 +13,64 @@ namespace Stewardess
 {
   class Buffer
   {
+    private:
+      // Internal chunk data type
+      struct Chunk
+      {
+        size_t capacity;
+        size_t size;
+
+        Chunk* next;
+
+        char* data;
+
+        // Construct empty
+        explicit Chunk( size_t );
+        // Aquire character array
+        explicit Chunk( char*, size_t );
+        // Delete memory
+        ~Chunk();
+
+        // Reallocate the capacity of this chunk
+        void reallocate( size_t );
+
+
+        Chunk( Chunk&& ) = default;
+
+        Chunk( const Chunk& ) = delete;
+        Chunk& operator=( const Chunk& ) = delete;
+        Chunk& operator=( const Chunk&& ) = delete;
+      };
+
+
     public:
-    const size_t MaxChunkSize = 4096;
+      class Iterator
+      {
+        friend class Buffer;
+        private:
+          const Chunk* _chunk;
+          size_t _position;
 
-    struct Chunk
-    {
-      size_t capacity;
-      size_t size;
+          // Private constructor. Only the buffer can construct its iterators
+          Iterator( const Chunk* );
+        public:
 
-      Chunk* next;
+          // Increment the position
+          void increment();
 
-      char* data;
+          // Return the character at the current position
+          char operator*() const;
 
-      Chunk( size_t, Chunk*, Chunk* );
-      ~Chunk();
+          // Increment the iterators position
+          void operator++() { this->increment(); }
 
-      void reallocate( size_t );
-
-      Chunk( const Chunk& ) = delete;
-      Chunk( const Chunk&& ) = delete;
-      Chunk& operator=( const Chunk& ) = delete;
-      Chunk& operator=( const Chunk&& ) = delete;
-    };
-
-    public :
-      // Iterator types are trivial
-      typedef char* iterator;
-      typedef const char* const_iterator;
+          // Return true while the iterator is valid
+          operator bool() const;
+      };
 
     private:
-      // To total accesible length
-      size_t _capacity;
-      // The used length of the raw data
-      size_t _size;
+      // The size we make the chunks
+      size_t _maxChunkSize;
 
       // First chunk
       Chunk* _start;
@@ -51,26 +78,13 @@ namespace Stewardess
       // Last chunk
       Chunk* _finish;
 
-      // Allocate the capacity
-      void allocate( size_t );
-
-      // Reallocate, copying the data
-      void reallocate( size_t );
-
-      // Clear all the chunks
-      void deallocate( Chunk* = nullptr );
+      // Allocate a new chunk of the requested size and append it
+      void allocate();
 
     public:
 
-      // Default construction
-      Buffer();
-
-      // Construct with a capacity
-      explicit Buffer( size_t );
-
-      // Destructor
-      ~Buffer();
-
+      // Construct a buffer specifying the chunk size
+      explicit Buffer( size_t = 1000 );
 
       // Copy the underlying data
       Buffer( const Buffer& );
@@ -80,71 +94,67 @@ namespace Stewardess
       Buffer( Buffer&& ) = default;
       Buffer& operator=( Buffer&& );
 
-
-      // Return the underlying data
-      const char* data() const { return _data; }
-      char* data() { return _data; }
+      // Destructor
+      ~Buffer();
 
 
-      // Push a character to the end
+      // Sum the capacity of all the chunks
+      size_t getCapacity() const;
+
+      // Sum the number of chars written to all the chunks
+      size_t getSize() const;
+
+      // Sum the number of chunks
+      size_t getNumberChunks() const;
+
+      // The suggested size for data chunks
+      size_t allocationSize() const { return _maxChunkSize; }
+
+
+
+      // Deletes everything
+      void clear();
+
+
+
+      // Interface for users to push strings to the buffer
+      // Copies data into the last chunk, allocating a new one as required
+      void push( std::string& );
       void push( char );
 
-      // Push a string character by character to the end
-      void push( const std::string& );
 
 
-      // Bytewise copy into the buffer
-      template < typename DATA >
-      void bytePush( DATA& );
-
-      // Bytewise copy out of the buffer
-      template < typename DATA >
-      void bytePop( size_t, DATA& ) const;
+      // Interface for users to inspect a buffer
+      Iterator getIterator() const;
 
 
-      // Return the character at position n
-      char at( size_t n ) const { return _data[n]; }
+
+      // Interface for reading from sockets!
+      // Adds a chunk based on the allocated character array
+      void pushChunk( char*, size_t );
 
 
-      // Change the capacity of the buffer
-      void reserve( size_t );
 
-      // Return the accesible capacity
-      size_t capacity() const { return _capacity; }
-
-      // Set the size following a write
-      void resize( size_t );
-
-      // Return the last size set
-      size_t size() const { return _size; }
+      // Interface for writing to sockets!
+      // Return a read iterator pointing to the first chunk
+      const char* chunk() const;
+      size_t chunkSize() const;
+      // Removes the first chunk
+      void popChunk();
 
 
-      // Return basic iterators
-      constexpr iterator begin() { return _data; }
-      constexpr const_iterator begin() const { return _data; }
-      constexpr iterator end() { return &_data[_size]; }
-      constexpr const_iterator end() const { return &_data[_size]; }
+
+      // Returns true if the buffer is empty
+      bool empty() const { return _start == nullptr; }
+
+      // Return the logical complement of empty
+      operator bool() const { return _start != nullptr; }
 
 
       // Useful for debugging
       std::string getString() const;
 
   };
-
-
-  template < typename DATA >
-  void Buffer::bytePush( DATA& data )
-  {
-    std::memcpy( (void*)&_data[_size], (void*)&data, sizeof( DATA ) );
-    _size += sizeof( DATA );
-  }
-
-
-  template < typename DATA >
-  void Buffer::bytePop( size_t pos, DATA& data ) const
-  {
-    std::memcpy( (void*)&data, (void*)&_data[pos], sizeof( DATA ) );
-  }
 
 }
 

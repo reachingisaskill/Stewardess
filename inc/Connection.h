@@ -6,7 +6,6 @@
 #include "LibeventIncludes.h"
 #include "Manager.h"
 #include "Handle.h"
-#include "Buffer.h"
 
 #include <string>
 
@@ -74,7 +73,7 @@ namespace Stewardess
       Serializer* const serializer;
 
       // Read buffer stored here so we don't need to keep re-allocating it
-      Buffer readBuffer;
+      size_t bufferSize;
 
 
       // Set the close flag to true

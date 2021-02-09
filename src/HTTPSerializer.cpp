@@ -84,8 +84,7 @@ namespace Stewardess
   {
     DEBUG_LOG( "Stewardess::HTTPSerializer", "Deserializing" );
 
-    Buffer::const_iterator current = buffer->begin();
-    Buffer::const_iterator end = buffer->end();
+    Buffer::Iterator current = buffer->getIterator();
 
     HTTPPayload* payload = new HTTPPayload();
 
@@ -94,7 +93,7 @@ namespace Stewardess
     std::string value_string;
 
 //////////////////// // Load the Request
-    while ( current != end )
+    while ( current )
     {
       if ( *current == (char)13 )
       {
@@ -140,15 +139,15 @@ namespace Stewardess
 
 
 //////////////////// // Load the Header
-    while ( current != end )
+    while ( current )
     {
       bool key = true;
-      while ( current != end )
+      while ( current )
       {
         if ( *current == (char)13 )
         {
           ++current;
-          if ( current != end && *current == (char)10 )
+          if ( current && *current == (char)10 )
           {
             payload->_header[key_string] = value_string;
             std::cout << "Header: " << key_string << ": " << value_string << std::endl;
@@ -183,7 +182,7 @@ namespace Stewardess
       if ( *current == (char)13 )
       {
         ++current;
-        if ( current != end && *current == (char)10 )
+        if ( current && *current == (char)10 )
         {
           ++current;
           break;
@@ -199,7 +198,7 @@ namespace Stewardess
     }
 
 //////////////////// // Load the Body
-    while ( current != end )
+    while ( current )
     {
       payload->_body.push_back( *current );
       ++current;

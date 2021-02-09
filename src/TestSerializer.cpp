@@ -37,8 +37,6 @@ namespace Stewardess
 
     buffer->push( '}' );
 
-    buffer->resize( message.size()+2 );
-
     this->pushBuffer( buffer );
   }
 
@@ -48,7 +46,7 @@ namespace Stewardess
     DEBUG_LOG( "Stewardess::TestSerialiazer", "Deserializing" );
     bool building = false;
     // Iterate through and break into messages
-    for ( Buffer::const_iterator it = buffer->begin(); it != buffer->end(); ++it )
+    for ( Buffer::Iterator it = buffer->getIterator(); it; ++it )
     {
       if ( ! building )
       {
@@ -60,7 +58,7 @@ namespace Stewardess
         else
         {
           this->pushError( ErrorUnexpectedData );
-          std::cout << " THE ERROR = " << int( (*it ) );
+//          std::cout << " THE ERROR = " << int( (*it ) );
         }
       }
       else

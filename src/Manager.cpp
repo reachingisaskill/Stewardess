@@ -377,7 +377,7 @@ namespace Stewardess
 
     // Create the connection 
     Connection* connection = new Connection( *address_answer->ai_addr, *this, worker_base, new_socket );
-    connection->readBuffer.reserve( _configuration.bufferSize );
+    connection->bufferSize =  _configuration.bufferSize;
 
 
     // Clear the address memory

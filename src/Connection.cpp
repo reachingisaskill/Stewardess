@@ -24,7 +24,7 @@ namespace Stewardess
     socketAddress( address ),
     manager( manager ),
     serializer( manager._server.buildSerializer() ),
-    readBuffer()
+    bufferSize( 4096 )
   {
     {
       GuardLock lk( _idCounterMutex );

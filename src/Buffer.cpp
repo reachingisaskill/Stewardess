@@ -10,11 +10,20 @@ namespace Stewardess
 ////////////////////////////////////////////////////////////////////////////////////////////////////
   // Chunk member function definitions
 
-  Buffer::Chunk::Chunk( size_t c, Chunk* next ) :
+  Buffer::Chunk::Chunk( size_t c ) :
     capacity( c ),
     size( 0 ),
-    next( next ),
+    next( nullptr ),
     data( new char[ c ] )
+  {
+  }
+
+
+  Buffer::Chunk::Chunk( char* data, size_t size ) :
+    capacity( size ),
+    size( size ),
+    next( nullptr ),
+    data( data )
   {
   }
 
@@ -33,13 +42,13 @@ namespace Stewardess
 
     if ( cap >= size )
     {
-      capacity = cap
+      capacity = cap;
       std::memcpy( data, old_data, size );
     }
     else
     {
       size = cap;
-      capacity = cap
+      capacity = cap;
       std::memcpy( data, old_data, size );
     }
 
@@ -48,56 +57,106 @@ namespace Stewardess
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-  // Buffer member function definitions
+  // Iterator member function definitions
 
-  Buffer::Buffer() :
-    _capacity( 0 ),
-    _size( 0 ),
-    _start( nullptr ),
-    _finish( nullptr )
+
+  Buffer::Iterator::Iterator( const Chunk* chunk ) :
+    _chunk( chunk ),
+    _position( 0 )
   {
   }
 
 
+  char Buffer::Iterator::operator*() const
+  {
+    return _chunk->data[ _position ];
+  }
+
+
+  void Buffer::Iterator::increment()
+  {
+    if ( ++_position >= _chunk->size )
+    {
+      _position = 0;
+      _chunk = _chunk->next;
+    }
+  }
+
+
+  Buffer::Iterator::operator bool() const
+  {
+    return _chunk != nullptr;
+  }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Buffer member function definitions
+
   Buffer::Buffer( size_t c ) :
-    _capacity( 0 ),
-    _size( 0 ),
+    _maxChunkSize( c ),
     _start( nullptr ),
     _finish( nullptr )
   {
-    this->allocate( c );
   }
 
 
   Buffer::~Buffer()
   {
-    this->deallocate();
+    this->clear();
   }
 
 
   Buffer::Buffer( const Buffer& other ) :
-    _capacity( other._capacity ),
-    _data( new char[ _capacity ] ),
-    _size( other._size )
+    _maxChunkSize( other._maxChunkSize ),
+    _start( nullptr ),
+    _finish( nullptr )
   {
-    for ( size_t i = 0; i < _size; ++i )
+    Chunk* current = other._start;
+
+    while ( current != nullptr )
     {
-      _data[i] = other._data[i];
+      if ( _start == nullptr )
+      {
+        _finish = new Chunk( current->capacity );
+        _start = _finish;
+        std::memcpy( _finish->data, current->data, current->size );
+      }
+      else
+      {
+        _finish->next = new Chunk( current->capacity );
+        _finish = _finish->next;
+        std::memcpy( _finish->data, current->data, current->size );
+      }
+      current = current->next;
     }
   }
 
 
   Buffer& Buffer::operator=( const Buffer& other )
   {
-    delete[] _data;
+    this->clear();
+    _start = nullptr;
+    _finish = nullptr;
 
-    _capacity = other._capacity;
-    _data = new char[ _capacity ];
-    _size = other._size;
+    _maxChunkSize = other._maxChunkSize;
 
-    for ( size_t i = 0; i < _size; ++i )
+    Chunk* current = other._start;
+
+    while ( current != nullptr )
     {
-      _data[i] = other._data[i];
+      if ( _start == nullptr )
+      {
+        _finish = new Chunk( current->capacity );
+        _start = _finish;
+        std::memcpy( _finish->data, current->data, current->size );
+      }
+      else
+      {
+        _finish->next = new Chunk( current->capacity );
+        _finish = _finish->next;
+        std::memcpy( _finish->data, current->data, current->size );
+      }
+      current = current->next;
     }
 
     return *this;
@@ -106,139 +165,182 @@ namespace Stewardess
 
   Buffer& Buffer::operator=( Buffer&& other )
   {
-    delete[] _data;
+    this->clear();
 
-    _capacity = std::exchange( other._capacity, 1 );
-    _data = std::exchange( other._data, new char );
-    _size = std::exchange( other._size, 0 );
+    _maxChunkSize = std::move( other._maxChunkSize );
+    _start = std::exchange( other._start, nullptr );
+    _finish = std::exchange( other._finish, nullptr );
 
     return *this;
   }
 
 
-  void Buffer::allocate( size_t capacity )
+  void Buffer::allocate()
   {
-    while( capacity > MaxChunkSize )
+    if ( _start != nullptr )
     {
-      if ( _finish == nullptr )
-      {
-        _finish = new Chunk( MaxChunkSize, nullptr );
-        _start = _finish;
-      }
-      else
-      {
-        _finish->next = new Chunk( MaxChunkSize, nullptr );
-        _finish = finish->next;
-      }
-      capacity -= MaxChunkSize;
-    }
-
-    _finish->next = new Chunk( capacity, nullptr );
-    _finish = finish->next;
-  }
-
-
-  void Buffer::reallocate( size_t capacity )
-  {
-    size_t current_old_capacity = 0;
-    size_t remaining_capacity = capacity;
-
-    Chunk* current = _start;
-
-    while ( current != nullptr )
-    {
-      current_old_capacity += current->capacity;
-
-      if ( current_old_capacity > capacity ) // Resize down and delete from here onwards
-      {
-        current->reallocate( remaining_capacity );
-        this->deallocate( current );
-        break;
-      }
-
-      remaining_capacity -= current->capacity;
-      current = current->next;
-    }
-
-    if ( capacity > current_old_capacity ) // Resize up and add new chunks
-    {
-      this->allocate( remaining_capacity );
-    }
-  }
-
-
-  void Buffer::deallocate( Chunk* from )
-  {
-    Chunk* current;
-
-    if ( from == nullptr )
-    {
-      current = _start;
-      _start = nullptr;
-      _finish = nullptr;
+      _finish->next = new Chunk( _maxChunkSize );
+      _finish = _finish->next;
     }
     else
     {
-      current = from->next;
-      _finish = from;
+      _finish = new Chunk( _maxChunkSize );
+      _start = _finish;
     }
+  }
 
-    while ( current != nullptr )
+
+  size_t Buffer::getCapacity() const
+  {
+    Chunk* current = _start;
+    size_t counter = 0;
+    while( current != nullptr )
     {
-      Chunk* temp = current;
+      counter += current->capacity;
       current = current->next;
+    }
+    return counter;
+  }
+
+
+  size_t Buffer::getSize() const
+  {
+    Chunk* current = _start;
+    size_t counter = 0;
+    while( current != nullptr )
+    {
+      counter += current->size;
+      current = current->next;
+    }
+    return counter;
+  }
+
+
+  size_t Buffer::getNumberChunks() const
+  {
+    Chunk* current = _start;
+    size_t counter = 0;
+    while( current != nullptr )
+    {
+      counter += 1;
+      current = current->next;
+    }
+    return counter;
+  }
+
+
+  void Buffer::clear()
+  {
+    while ( _start != nullptr )
+    {
+      Chunk* temp = _start;
+      _start = _start->next;
       delete temp;
     }
   }
 
 
+  void Buffer::push( std::string& string )
+  {
+    if ( _start == nullptr )
+      this->allocate();
+
+    size_t string_start = 0;
+    size_t remaining = _finish->capacity - _finish->size;
+    size_t string_remaining = string.size() - string_start;
+
+    while ( string_remaining > remaining )
+    {
+      std::cout << "String Start = " << string_start << " remaining = " << remaining << " string write = " << string_remaining << std::endl;
+      std::memcpy( &_finish->data[_finish->size], &string.c_str()[ string_start ], remaining );
+      _finish->size += remaining;
+      string_start += remaining;
+      string_remaining -= remaining;
+      this->allocate();
+      remaining = _finish->capacity - _finish->size;
+    }
+
+    std::cout << "String Start = " << string_start << " remaining = " << remaining << " string write = " << string_remaining << std::endl;
+
+    std::memcpy( &_finish->data[_finish->size], &string.c_str()[string_start], string_remaining );
+    _finish->size += string_remaining;
+  }
+
+
   void Buffer::push( char c )
   {
-    _data[_size] = c;
-    ++_size;
-  }
+    if ( _start == nullptr )
+      this->allocate();
 
-
-  void Buffer::push( const std::string& string )
-  {
-    std::memcpy( &_data[_size], string.c_str(), string.size() );
-    _size += string.size();
-  }
-
-
-  void Buffer::reserve( size_t new_cap )
-  {
-    delete[] _data;
-
-    _capacity = new_cap;
-    _data = new char[ _capacity ];
-
-    if ( _size > _capacity )
+    if ( _finish->capacity == _finish->size )
     {
-      _size = _capacity;
+      this->allocate();
+    }
+
+    _finish->data[_finish->size] = c;
+    _finish->size += 1;
+  }
+
+
+  void Buffer::pushChunk( char* data, size_t size )
+  {
+    if ( _start != nullptr )
+    {
+      _finish->next = new Chunk( data, size );
+      _finish = _finish->next;
+    }
+    else
+    {
+      _finish = new Chunk( data, size );
+      _start = _finish;
     }
   }
 
 
-  void Buffer::resize( size_t new_size )
+  Buffer::Iterator Buffer::getIterator() const
   {
-    _size = new_size;
+    return Iterator( _start );
+  }
+
+
+  const char* Buffer::chunk() const
+  {
+    return _start->data;
+  }
+
+
+  size_t Buffer::chunkSize() const
+  {
+    return _start->size;
+  }
+
+
+  void Buffer::popChunk()
+  {
+    if ( _start != nullptr )
+    {
+      Chunk* temp = _start;
+      _start = _start->next;
+      delete temp;
+    }
   }
 
 
   std::string Buffer::getString() const
   {
     std::string result;
-    for ( size_t i = 0; i < _size; ++i )
+
+    Chunk* current = _start;
+
+    while ( current != nullptr )
     {
-      char c = _data[i];
-      if ( (int)c < 32 )
+      for ( size_t i = 0; i < current->size; ++i )
       {
-        result += std::string( "(&" ) + std::to_string( (int)c ) + std::string( ")" );
+        result.push_back( current->data[i] );
       }
-      else
-        result.push_back( _data[i] );
+      current = current->next;
     }
+
     return result;
   }
 

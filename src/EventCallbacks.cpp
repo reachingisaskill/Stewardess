@@ -6,6 +6,7 @@
 #include "Handle.h"
 #include "Connection.h"
 #include "Serializer.h"
+#include "Buffer.h"
 
 #include <cmath>
 #include <cstring>
@@ -39,7 +40,7 @@ namespace Stewardess
 
     // Create the connection 
     Connection* connection = new Connection( *address, *data, worker_base, new_socket );
-    connection->readBuffer.reserve( data->_configuration.bufferSize );
+    connection->bufferSize = data->_configuration.bufferSize;
       
     // Add the new connection to the manager
     data->addConnection( connection );
@@ -104,23 +105,23 @@ namespace Stewardess
 
 
   ////////////////////////////////////////////////////////////////////////////////
-  // Buffer event callback functions
+  // Read/write event callback functions
 
   void readCB( evutil_socket_t fd, short /*flags*/, void* arg )
   {
     Connection* connection = (Connection*)arg;
-    Buffer& buffer = connection->readBuffer;
     DEBUG_LOG( "Stewardess::SocketRead", "Socket Read called" );
 
     ssize_t result;
     bool good = connection->isOpen();
 
+    Buffer buffer;
+
     while( good )
     {
-      buffer.resize( 0 );
-
+      char* raw_buffer = new char[ connection->bufferSize ];
       DEBUG_LOG( "Stewardess::SocketRead", "Reading from socket" );
-      result = read( fd, buffer.data(), buffer.capacity() );
+      result = read( fd, raw_buffer, connection->bufferSize );
       DEBUG_STREAM( "Stewardess::SocketRead" ) << "Read " << result;
 
       if ( result <= 0 )
@@ -130,11 +131,13 @@ namespace Stewardess
           DEBUG_STREAM( "Stewardess::SocketRead" ) << "End of file. Connection: " << connection->getIDNumber();
           connection->close();
           connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
+          delete[] raw_buffer;
           break;
         }
         else if ( errno == EAGAIN )
         {
           DEBUG_STREAM( "Stewardess::SocketRead" ) << "EAGAIN";
+          delete[] raw_buffer;
           break;
         }
         else
@@ -142,16 +145,18 @@ namespace Stewardess
           ERROR_STREAM( "Stewardess::SocketRead" ) << "Connection Error. Connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
           connection->close();
           connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+          delete[] raw_buffer;
           break;
         }
       }
       else
       {
         DEBUG_LOG( "Stewardess::SocketRead", "Deserializing" );
-        buffer.resize( result );
-        connection->serializer->deserialize( &buffer );
+        buffer.pushChunk( raw_buffer, result );
       }
     }
+
+    connection->serializer->deserialize( &buffer );
 
     while ( ! connection->serializer->payloadEmpty() )
     {
@@ -192,9 +197,9 @@ namespace Stewardess
     {
       write_count = 0;
       Buffer* buf = serializer->getBuffer();
-      while ( good )
+      while ( *buf )
       {
-        result = write( fd, buf->data() + write_count, buf->size() - write_count );
+        result = write( fd, buf->chunk() + write_count, buf->chunkSize() - write_count );
         DEBUG_STREAM( "Stewardess::SocketWrite" ) << "Wrote " << result;
 
         if ( result <= 0 )
@@ -222,9 +227,10 @@ namespace Stewardess
             break;
           }
         }
-        else if ( result == (ssize_t)buf->size()-write_count ) // Wrote everything
+        else if ( result == (ssize_t)buf->chunkSize()-write_count ) // Wrote everything
         {
-          break;
+          buf->popChunk();
+          write_count = 0;
         }
         else
         {
