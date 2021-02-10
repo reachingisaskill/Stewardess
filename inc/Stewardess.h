@@ -9,6 +9,7 @@
 #include "Payload.h"
 #include "Serializer.h"
 #include "Buffer.h"
+#include "Exception.h"
 
 #endif // STEWARDESS_H_
 

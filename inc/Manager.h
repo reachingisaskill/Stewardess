@@ -41,7 +41,7 @@ namespace Stewardess
       CallbackInterface& _server;
 
       // Flag to crash out before server starts
-      bool _abort;
+      std::atomic<bool> _abort;
 
 
       // Map of all the connections currently with the process

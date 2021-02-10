@@ -4,6 +4,7 @@
 #include "EventCallbacks.h"
 #include "WorkerThread.h"
 #include "Connection.h"
+#include "Exception.h"
 
 #include <cstring>
 #include <cmath>
@@ -64,6 +65,29 @@ namespace Stewardess
 
   void Manager::_cleanup()
   {
+    // Delete all the outstanding connections
+    for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
+    {
+      delete (*it);
+    }
+    _closedConnections.clear();
+
+    for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
+    {
+      delete it->second;
+    }
+    _connections.clear();
+
+
+    // Join all the worker threads.
+    INFO_LOG( "Stewardess::Manager", "Joining worker threads" );
+    for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
+    {
+      (*it)->theThread.join();
+      event_base_free( (*it)->data.eventBase );
+      delete (*it);
+    }
+
     if ( _deathEvent )
     {
       event_free( _deathEvent );
@@ -144,7 +168,7 @@ namespace Stewardess
       _eventBase = event_base_new();
       if ( _eventBase == nullptr )
       {
-        throw std::runtime_error( "Could not create an event base. Unknown error." );
+        throw Exception( "Could not create an event base. Unknown error." );
       }
 
 
@@ -152,7 +176,7 @@ namespace Stewardess
       _deathEvent = evtimer_new( _eventBase, killTimerCB, (void*)this );
       if ( _deathEvent == nullptr )
       {
-        throw std::runtime_error( "Could not create the death event." );
+        throw Exception( "Could not create the death event." );
       }
       // event_add( _deathEvent, &_deathTime );
 
@@ -161,7 +185,7 @@ namespace Stewardess
       _tickEvent = evtimer_new( _eventBase, tickTimerCB, (void*)this );
       if ( _tickEvent == nullptr )
       {
-        throw std::runtime_error( "Could not create the tick event." );
+        throw Exception( "Could not create the tick event." );
       }
       event_add( _tickEvent, &_tickTime );
 
@@ -170,9 +194,24 @@ namespace Stewardess
       _signalEvent = evsignal_new( _eventBase, SIGINT, interruptSignalCB, (void*)this );
       if ( _signalEvent == nullptr )
       {
-        throw std::runtime_error( "Could not create the signal event." );
+        throw Exception( "Could not create the signal event." );
       }
       event_add( _signalEvent, nullptr );
+
+
+      // Build a listener if wanted
+      if ( _configuration.requestListener )
+      {
+        INFO_STREAM( "Stewardess::Manager" ) << "Configuring listener on port " << _configuration.portNumber;
+        _listener = evconnlistener_new_bind( _eventBase, listenerAcceptCB, (void*)this,
+                                             LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
+                                             (sockaddr*)&_socketAddress, sizeof(_socketAddress) );
+        if ( _listener == nullptr )
+        {
+          throw Exception( "Could not bind a listener to the requested socket." );
+        }
+        evconnlistener_set_error_cb( _listener, listenerErrorCB );
+      }
 
 
       // Create the worker threads
@@ -185,27 +224,13 @@ namespace Stewardess
         info->data.eventBase = event_base_new();
         if ( info->data.eventBase == nullptr )
         {
-          throw std::runtime_error( "Could not create a worker event base. Unknowm error." );
+          throw Exception( "Could not create a worker event base. Unknown error." );
         }
 
         info->theThread = std::thread( workerThread, info->data );
         _threads.push_back( info );
       }
 
-
-      // Build a listener if wanted
-      if ( _configuration.requestListener )
-      {
-        INFO_STREAM( "Stewardess::Manager" ) << "Configuring listener on port " << _configuration.portNumber;
-        _listener = evconnlistener_new_bind( _eventBase, listenerAcceptCB, (void*)this,
-                                             LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
-                                             (sockaddr*)&_socketAddress, sizeof(_socketAddress) );
-        if ( _listener == nullptr )
-        {
-          throw std::runtime_error( "Could not bind a listener to the requested socket." );
-        }
-        evconnlistener_set_error_cb( _listener, listenerErrorCB );
-      }
 
       // Set the tick time stamp
       _tickTimeStamp = std::chrono::system_clock::now();
@@ -222,32 +247,33 @@ namespace Stewardess
 
       INFO_LOG( "Stewardess::Manager", "Operation stopped." );
 
-      // Delete all the outstanding connections
-      for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
-      {
-        delete (*it);
-      }
-      _closedConnections.clear();
-
-      for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
-      {
-        delete it->second;
-      }
-      _connections.clear();
-
-
-      // Join all the worker threads.
-      INFO_LOG( "Stewardess::Manager", "Joining worker threads" );
-      for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
-      {
-        (*it)->theThread.join();
-        event_base_free( (*it)->data.eventBase );
-        delete (*it);
-      }
+//      // Delete all the outstanding connections
+//      for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
+//      {
+//        delete (*it);
+//      }
+//      _closedConnections.clear();
+//
+//      for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
+//      {
+//        delete it->second;
+//      }
+//      _connections.clear();
+//
+//
+//      // Join all the worker threads.
+//      INFO_LOG( "Stewardess::Manager", "Joining worker threads" );
+//      for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
+//      {
+//        (*it)->theThread.join();
+//        event_base_free( (*it)->data.eventBase );
+//        delete (*it);
+//      }
 
     }
-    catch( std::exception& ex )
+    catch( const Exception& ex )
     {
+      this->abort();
       this->_cleanup();
       _server._manager = nullptr;
       throw ex;
@@ -304,6 +330,7 @@ namespace Stewardess
     // Kill the worker threads
     for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
     {
+      std::cout << "Breaking worker" << std::endl;
       event_base_loopbreak( (*it)->data.eventBase );
     }
 

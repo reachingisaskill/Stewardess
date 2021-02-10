@@ -156,7 +156,10 @@ namespace Stewardess
       }
     }
 
-    connection->serializer->deserialize( &buffer );
+    if ( buffer )
+    {
+      connection->serializer->deserialize( &buffer );
+    }
 
     while ( ! connection->serializer->payloadEmpty() )
     {
@@ -248,6 +251,15 @@ namespace Stewardess
 
     DEBUG_LOG( "Stewardess::SocketWrite", "Socket Write Finished" );
     connection->touchAccess();
+  }
+
+
+  void workerTickCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
+  {
+    WorkerData* data = (WorkerData*)arg;
+
+    // Set the timeout time to the log of the number of connections
+    event_add( data->tickEvent, &data->tickTime );
   }
 
 }

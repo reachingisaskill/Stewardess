@@ -37,6 +37,9 @@ namespace Stewardess
       // Flag to trigger the destruction of the connection data
       bool _close;
 
+      // The socket we are connected through
+      evutil_socket_t _socket;
+
       // Pointer to the read and write events
       event* _readEvent;
       event* _writeEvent;

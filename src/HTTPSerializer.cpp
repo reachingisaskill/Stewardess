@@ -76,6 +76,9 @@ namespace Stewardess
 
     buffer->push( payload->_body );
 
+    buffer->push( (char) 13 ); // CR
+    buffer->push( (char) 10 ); // LF
+
     this->pushBuffer( buffer );
   }
 
@@ -117,7 +120,6 @@ namespace Stewardess
       }
       ++current;
     }
-    std::cout << "Request string: " << request_string.str() << std::endl;
 
     std::string request_token;
     request_string >> request_token;
@@ -134,7 +136,8 @@ namespace Stewardess
     }
     else
     {
-      payload->_request = request_string.str();
+      request_string >> payload->_request;
+      request_string >> payload->_version;
     }
 
 
@@ -150,7 +153,6 @@ namespace Stewardess
           if ( current && *current == (char)10 )
           {
             payload->_header[key_string] = value_string;
-            std::cout << "Header: " << key_string << ": " << value_string << std::endl;
             key_string.clear();
             value_string.clear();
             ++current;
@@ -164,20 +166,32 @@ namespace Stewardess
             return;
           }
         }
-        else if ( *current == ':' )
-        {
-          key = false;
-        }
         else
         {
           if ( key )
-            key_string.push_back( *current );
+          {
+            if ( *current == ':' )
+            {
+              ++current; // Expect a space
+              if ( ! current )
+              {
+                delete payload;
+                payload = nullptr;
+                this->pushError( ErrorMalformedPayload );
+                return;
+              }
+              key = false;
+            }
+            else
+            {
+              key_string.push_back( *current );
+            }
+          }
           else
             value_string.push_back( *current );
         }
         ++current;
       }
-      std::cout << "HERE" << std::endl;
 
       if ( *current == (char)13 )
       {
@@ -292,6 +306,10 @@ namespace Stewardess
   {
     switch( response )
     {
+      case HTTPPayload::Null :
+        return std::string();
+        break;
+
       case HTTPPayload::Ok :
         return std::string( "200 OK" );
         break;

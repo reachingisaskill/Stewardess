@@ -17,6 +17,7 @@ namespace Stewardess
     _idNumber( 0 ),
     _identifier( 0 ),
     _close( false ),
+    _socket( new_socket ),
     _readEvent( nullptr ),
     _writeEvent( nullptr ),
     _connectionTime( std::chrono::system_clock::now() ),
@@ -57,10 +58,14 @@ namespace Stewardess
 
   void Connection::close()
   {
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << _idNumber;
     GuardLock lk( _theMutex );
     _close = true;
     event_del( _readEvent );
     event_del( _writeEvent );
+
+    // Damn C libraries and their lack of namespaces....
+    ::close( _socket );
 
     manager.closeConnection( this );
   }

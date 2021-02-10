@@ -251,7 +251,6 @@ namespace Stewardess
 
     while ( string_remaining > remaining )
     {
-      std::cout << "String Start = " << string_start << " remaining = " << remaining << " string write = " << string_remaining << std::endl;
       std::memcpy( &_finish->data[_finish->size], &string.c_str()[ string_start ], remaining );
       _finish->size += remaining;
       string_start += remaining;
@@ -259,8 +258,6 @@ namespace Stewardess
       this->allocate();
       remaining = _finish->capacity - _finish->size;
     }
-
-    std::cout << "String Start = " << string_start << " remaining = " << remaining << " string write = " << string_remaining << std::endl;
 
     std::memcpy( &_finish->data[_finish->size], &string.c_str()[string_start], string_remaining );
     _finish->size += string_remaining;

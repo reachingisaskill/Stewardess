@@ -31,6 +31,8 @@ namespace Stewardess
   void readCB( evutil_socket_t, short, void* );
   void writeCB( evutil_socket_t, short, void* );
 
+  void workerTickCB( evutil_socket_t, short, void* );
+
 }
 
 #endif // STEWARDESS_EVENT_CALLBACKS_H_

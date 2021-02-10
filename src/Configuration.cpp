@@ -1,5 +1,6 @@
 
 #include "Configuration.h"
+#include "Exception.h"
 
 
 namespace Stewardess
@@ -55,7 +56,7 @@ namespace Stewardess
   {
     if ( m < 1.0E-6 )
     {
-      throw std::runtime_error( "Tick time modifier cannot be small or negative." );
+      throw Exception( "Tick time modifier cannot be small or negative." );
     }
     _data.tickTimeModifier = m;
   }

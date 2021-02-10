@@ -42,7 +42,7 @@ namespace Stewardess
 
       enum MethodType { Response, Get, Post };
 
-      enum ResponseType { Ok = 200, NotFound = 404 };
+      enum ResponseType { Null = 0, Ok = 200, NotFound = 404 };
 
     private:
       MethodType _method;
