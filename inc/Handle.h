@@ -87,8 +87,12 @@ namespace Stewardess
       TimeStamp lastAccess() const;
 
 
+      // Return false for a dead connection
+      bool exists() const { return _data != nullptr; }
+
+
       // Returns false for a dead connection
-      operator bool() { return _data != nullptr; }
+      operator bool() const { return _data != nullptr; }
   };
 
 }

@@ -142,7 +142,7 @@ namespace Stewardess
 
 
       // Return the timestamp of the last server tick
-      TimeStamp getTickTime() const { return _tickTimeStamp; }
+      TimeStamp getLastTickTime() const { return _tickTimeStamp; }
 
       // Return the time the server was started
       TimeStamp getStartTime() const { return _serverStartTime; }
