@@ -52,10 +52,6 @@ namespace Stewardess
       virtual void onWrite( Handle ) {}
 
 
-      // Called when a new connection is added
-      virtual void onConnect( Handle ) {}
-
-
       // Called when a connection event occurs
       virtual void onConnectionEvent( Handle, ConnectionEvent, const char* = nullptr ) {}
 
