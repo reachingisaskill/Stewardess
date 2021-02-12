@@ -191,12 +191,15 @@ namespace Stewardess
 
 
       // Create a signal event so we can close the system down
-      _signalEvent = evsignal_new( _eventBase, SIGINT, interruptSignalCB, (void*)this );
-      if ( _signalEvent == nullptr )
+      if ( _configuration.requestSignalHandler )
       {
-        throw Exception( "Could not create the signal event." );
+        _signalEvent = evsignal_new( _eventBase, SIGINT, interruptSignalCB, (void*)this );
+        if ( _signalEvent == nullptr )
+        {
+          throw Exception( "Could not create the signal event." );
+        }
+        event_add( _signalEvent, nullptr );
       }
-      event_add( _signalEvent, nullptr );
 
 
       // Build a listener if wanted
@@ -296,12 +299,15 @@ namespace Stewardess
 
     if ( _listener != nullptr )
     {
-      // Disable the listener and signal handler
+      // Disable the listener
       evconnlistener_disable( _listener );
     }
 
     // Disable the signal event. If someone sends it twice we just die.
-    evsignal_del( _signalEvent );
+    if ( _signalEvent != nullptr )
+    {
+      evsignal_del( _signalEvent );
+    }
 
     // Trigger the server call back
     _server.onEvent( ServerEvent::Shutdown );
@@ -325,7 +331,10 @@ namespace Stewardess
     }
 
     // Disable the signal event. If someone sends it twice we just die.
-    evsignal_del( _signalEvent );
+    if ( _signalEvent != nullptr )
+    {
+      evsignal_del( _signalEvent );
+    }
 
     // Kill the worker threads
     for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )

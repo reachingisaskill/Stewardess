@@ -40,6 +40,9 @@ namespace Stewardess
 
     // If true a listener event is added to libevent stack to support incoming connections
     bool requestListener;
+
+    // If true a signal event is added to libevent stack to catch the sigint
+    bool requestSignalHandler;
   };
 
 
@@ -84,6 +87,10 @@ namespace Stewardess
 
       // Set whether a listener event is required to allow new remote connection requests
       void setRequestListener( bool );
+
+
+      // Set whether a listener event is required to allow new remote connection requests
+      void setRequestSignalHandler( bool );
 
   };
 

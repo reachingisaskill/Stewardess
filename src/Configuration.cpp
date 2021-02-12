@@ -20,6 +20,7 @@ namespace Stewardess
     _data.bufferSize = 4096;
     _data.numThreads = 2;
     _data.requestListener = false;
+    _data.requestSignalHandler = true;
   }
 
 
@@ -77,6 +78,12 @@ namespace Stewardess
   void Configuration::setRequestListener( bool lis )
   {
     _data.requestListener = lis;
+  }
+
+
+  void Configuration::setRequestSignalHandler( bool sig )
+  {
+    _data.requestSignalHandler = sig;
   }
 
 }

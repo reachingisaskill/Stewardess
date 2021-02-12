@@ -74,7 +74,15 @@ namespace Stewardess
     buffer->push( (char) 13 ); // CR
     buffer->push( (char) 10 ); // LF
 
-    buffer->push( payload->_body );
+    if ( payload->_isFile )
+    {
+      std::ifstream instream( payload->_body, std::ios_base::in );
+      buffer->push( instream );
+    }
+    else
+    {
+      buffer->push( payload->_body );
+    }
 
     buffer->push( (char) 13 ); // CR
     buffer->push( (char) 10 ); // LF
@@ -152,7 +160,7 @@ namespace Stewardess
           ++current;
           if ( current && *current == (char)10 )
           {
-            payload->_header[key_string] = value_string;
+            payload->addHeader( key_string, value_string );
             key_string.clear();
             value_string.clear();
             ++current;
@@ -251,6 +259,21 @@ namespace Stewardess
   void HTTPPayload::setHeader( std::string key, std::string value )
   {
     _header[key] = value;
+  }
+
+
+  void HTTPPayload::addHeader( std::string key, std::string value )
+  {
+    HeaderData::iterator found = _header.find( key );
+    if ( found != _header.end() )
+    {
+      found->second += ", ";
+      found->second += value;
+    }
+    else
+    {
+      _header[key] = value;
+    }
   }
 
 

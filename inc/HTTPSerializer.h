@@ -97,12 +97,18 @@ namespace Stewardess
       void setFile( bool f ) { _isFile = f; }
 
 
-      // Set a key-value pair in the header
+      // Set a key-value pair in the header replacing one if it already exists
       void setHeader( std::string, std::string );
+
+      // Adds a key-value pair in the header, appending values if it alredy exists
+      void addHeader( std::string, std::string );
 
 
       // Return the method of payload
       MethodType getMethod() const { return _method; }
+
+      // Return a reference to the request string
+      const std::string& getRequest() const { return _request; }
 
       // Return a requested header value. Returns an empty string if it doesn't exist
       std::string getHeader( std::string ) const;
