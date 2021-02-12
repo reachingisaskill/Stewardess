@@ -119,6 +119,7 @@ namespace Stewardess
 
       // Interface for users to push strings to the buffer
       // Copies data into the last chunk, allocating a new one as required
+      void push( std::istream& );
       void push( std::string& );
       void push( char );
 

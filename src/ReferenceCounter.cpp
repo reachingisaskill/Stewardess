@@ -13,6 +13,8 @@ namespace Stewardess
 
   ReferenceCounter::~ReferenceCounter()
   {
+    GuardLock lk( _mutex );
+
     if ( _data != nullptr )
     {
       this->_checkSubtract();
@@ -23,6 +25,9 @@ namespace Stewardess
   ReferenceCounter::ReferenceCounter( const ReferenceCounter& other ) :
     _data( nullptr )
   {
+    GuardLock lk_this( _mutex );
+    GuardLock lk_that( other._mutex );
+
     _data = other._data;
     if ( _data )
     {
@@ -34,12 +39,18 @@ namespace Stewardess
   ReferenceCounter::ReferenceCounter( ReferenceCounter&& other ) :
     _data( nullptr )
   {
+    GuardLock lk_this( _mutex );
+    GuardLock lk_that( other._mutex );
+
     _data = std::exchange( other._data, this->_data ) ;
   }
 
 
   ReferenceCounter& ReferenceCounter::operator=( const ReferenceCounter& other )
   {
+    GuardLock lk_this( _mutex );
+    GuardLock lk_that( other._mutex );
+
     if ( _data )
     {
       this->_checkSubtract();
@@ -58,6 +69,9 @@ namespace Stewardess
 
   ReferenceCounter& ReferenceCounter::operator=( ReferenceCounter&& other )
   {
+    GuardLock lk_this( _mutex );
+    GuardLock lk_that( other._mutex );
+
     if ( _data )
     {
       this->_checkSubtract();
@@ -88,6 +102,8 @@ namespace Stewardess
 
   size_t ReferenceCounter::getNumber() const
   {
+    GuardLock lk_this( _mutex );
+
     if ( _data )
     {
       return _data->references;
@@ -101,6 +117,8 @@ namespace Stewardess
 
   ReferenceCounter::operator bool() const
   {
+    GuardLock lk_this( _mutex );
+
     if ( _data )
     {
       return true;

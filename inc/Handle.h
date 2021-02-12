@@ -68,7 +68,7 @@ namespace Stewardess
 
 
       // Returns the creation number
-      UniqueID getIDNumber() const;
+      HugeID getIDNumber() const;
 
 
       // Returns the user id number

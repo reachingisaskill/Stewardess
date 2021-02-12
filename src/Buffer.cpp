@@ -240,6 +240,26 @@ namespace Stewardess
   }
 
 
+  void Buffer::push( std::istream& stream )
+  {
+    if ( _start == nullptr )
+      this->allocate();
+
+    if ( stream )
+    {
+      stream.read( &_finish->data[_finish->size], _finish->capacity - _finish->size );
+      _finish->size += stream.gcount();
+
+      while ( stream )
+      {
+        this->allocate();
+        stream.read( &_finish->data[_finish->size], _finish->capacity - _finish->size );
+        _finish->size += stream.gcount();
+      }
+    }
+  }
+
+
   void Buffer::push( std::string& string )
   {
     if ( _start == nullptr )

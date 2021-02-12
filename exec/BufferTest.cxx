@@ -42,6 +42,8 @@ int main( int, char** )
     std::cout << "Expect 1 : " << b << std::endl;
   }
 
+  std::cout << "\n----------------------------------------------------------------------------------------------------\n" << std::endl;
+
   {
     Buffer b1 = buildFunc();
 
@@ -73,6 +75,8 @@ int main( int, char** )
     std::cout << "Expect Capacity 432 : " << b3.getCapacity() << std::endl;
     std::cout << "Expect chunks 1 : " << b3.getNumberChunks() << std::endl;
   }
+
+  std::cout << "\n----------------------------------------------------------------------------------------------------\n" << std::endl;
 
   {
     std::string string3 = "...";
@@ -128,6 +132,27 @@ int main( int, char** )
       std::cout << *it;
     }
     std::cout << std::endl;
+  }
+
+  std::cout << "\n----------------------------------------------------------------------------------------------------\n" << std::endl;
+
+  {
+    Buffer b( 100 );
+    std::string filename( "./README.md" );
+
+    std::cout << "Expect Capacity 0 : " << b.getCapacity() << std::endl;
+    std::cout << "Expect chunks 0 : " << b.getNumberChunks() << std::endl;
+    std::cout << "Expect size 0 : " << b.getSize() << std::endl;
+    std::cout << "Expect 0 : " << b << std::endl;
+
+    std::ifstream instream( filename, std::ios_base::in );
+
+    b.push( instream );
+
+    std::cout << "Expect Capacity 800 : " << b.getCapacity() << std::endl;
+    std::cout << "Expect chunks 8 : " << b.getNumberChunks() << std::endl;
+    std::cout << "Expect size 798 : " << b.getSize() << std::endl;
+    std::cout << "Expect 1 : " << b << std::endl;
   }
 
 

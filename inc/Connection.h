@@ -92,7 +92,7 @@ namespace Stewardess
 
     
       // Return the ID number of its creation
-      UniqueID getIDNumber() const { return _idNumber; }
+      HugeID getIDNumber() const { return _idNumber; }
 
 
       // Return the unique user id for this connection

@@ -75,7 +75,7 @@ namespace Stewardess
   }
 
 
-  UniqueID Handle::getIDNumber() const
+  HugeID Handle::getIDNumber() const
   {
     return _data->getIDNumber();
   }

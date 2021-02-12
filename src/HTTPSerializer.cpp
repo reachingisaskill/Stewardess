@@ -8,7 +8,7 @@
 namespace Stewardess
 {
 
-  const char* const MethodStrings[] = { "RESPONSE", "GET", "POST" };
+  const char* const MethodStrings[] = { "RESPONSE", "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT", "PATCH" };
 
   const char* const VersionString = "HTTP/1.1";
 
@@ -228,8 +228,9 @@ namespace Stewardess
     _method( Response ),
     _request(),
     _version(),
-    _response(),
+    _response( Null ),
     _header(),
+    _isFile( false ),
     _body()
   {
   }
@@ -241,9 +242,9 @@ namespace Stewardess
     _version( VersionString ),
     _response( response ),
     _header(),
+    _isFile( false ),
     _body( bodyText )
   {
-
   }
 
 
@@ -292,7 +293,7 @@ namespace Stewardess
 
   HTTPPayload::MethodType getMethodFromName( std::string name  )
   {
-    for ( size_t i = 0; i < 3; ++i )
+    for ( size_t i = 0; i < 10; ++i )
     {
       if ( name == MethodStrings[i] )
         return (HTTPPayload::MethodType)i;
@@ -306,19 +307,71 @@ namespace Stewardess
   {
     switch( response )
     {
-      case HTTPPayload::Null :
-        return std::string();
-        break;
-
       case HTTPPayload::Ok :
         return std::string( "200 OK" );
         break;
 
+      case HTTPPayload::Created :
+        return std::string( "201 Created" );
+        break;
+
+      case HTTPPayload::Accepted :
+        return std::string( "202 Accpeted" );
+        break;
+
+      case HTTPPayload::BadRequest :
+        return std::string( "400 Bad Request" );
+        break;
+
+      case HTTPPayload::Unauthorized :
+        return std::string( "401 Unauthorized" );
+        break;
+
+      case HTTPPayload::PaymentRequired :
+        return std::string( "402 Payment Required" );
+        break;
+
+      case HTTPPayload::Forbidden :
+        return std::string( "403 Forbidden" );
+        break;
+
       case HTTPPayload::NotFound :
-        return std::string( "404 NotFound" );
+        return std::string( "404 Not Found" );
+        break;
+
+      case HTTPPayload::MethodNotAllowed :
+        return std::string( "405 Method Not Allowed" );
+        break;
+
+      case HTTPPayload::InternalServerError :
+        return std::string( "500 Internal Server Error" );
+        break;
+
+      case HTTPPayload::NotImplemented :
+        return std::string( "501 Not Implemented" );
+        break;
+
+      case HTTPPayload::BadGateway :
+        return std::string( "502 Bad Gateway" );
+        break;
+
+      case HTTPPayload::ServiceUnavailable :
+        return std::string( "503 Service Unavailable" );
+        break;
+
+      case HTTPPayload::GatewayTimeout :
+        return std::string( "504 Gateway Timeout" );
+        break;
+
+      case HTTPPayload::HTTPVersionNotSupported :
+        return std::string( "505 HTTP Version Not Supported" );
+        break;
+
+      default :
+        return std::string( "500 Internal Server Error" );
         break;
     }
-    return std::string( "200 OK" );
+//    return std::string( "200 OK" );
   }
 
 }
