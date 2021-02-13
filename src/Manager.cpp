@@ -65,6 +65,8 @@ namespace Stewardess
 
   void Manager::_cleanup()
   {
+    GuardLock lk_closed( _closedConnectionsMutex );
+    GuardLock lk_connections( _connectionsMutex );
     // Delete all the outstanding connections
     for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
     {
@@ -532,7 +534,7 @@ namespace Stewardess
   void Manager::cleanupClosedConnections()
   {
     GuardLock lk( _closedConnectionsMutex );
-    
+
     ConnectionList::iterator it = _closedConnections.begin();
     while( it != _closedConnections.end() )
     {

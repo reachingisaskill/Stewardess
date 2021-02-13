@@ -46,6 +46,7 @@ namespace Stewardess
 
   Connection::~Connection()
   {
+    GuardLock lk( _theMutex );
     if ( _readEvent != nullptr )
       event_free( _readEvent );
     if ( _writeEvent != nullptr )
@@ -60,14 +61,17 @@ namespace Stewardess
   {
     DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << _idNumber;
     GuardLock lk( _theMutex );
-    _close = true;
-    event_del( _readEvent );
-    event_del( _writeEvent );
+    if ( ! _close )
+    {
+      _close = true;
+      event_del( _readEvent );
+      event_del( _writeEvent );
 
-    // Damn C libraries and their lack of namespaces....
-    ::close( _socket );
+      // Damn C libraries and their lack of namespaces....
+      ::close( _socket );
 
-    manager.closeConnection( this );
+      manager.closeConnection( this );
+    }
   }
 
 
