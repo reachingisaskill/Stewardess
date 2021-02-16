@@ -323,9 +323,6 @@ namespace Stewardess
     // Leave a flag for things to check
     _abort = true;
 
-    // Call on stop function
-    _server.onStop();
-
     // Disable the listener
     if ( _listener != nullptr )
     {
