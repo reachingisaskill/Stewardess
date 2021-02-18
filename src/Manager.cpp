@@ -6,6 +6,7 @@
 #include "Connection.h"
 #include "Exception.h"
 
+#include <signal.h>
 #include <cstring>
 #include <cmath>
 
@@ -46,6 +47,12 @@ namespace Stewardess
     {
       if ( evthread_use_pthreads() != 0 )
         ERROR_LOG( "Stewardess::Manager", "Could not enable pthreads?!" );
+
+      // Try to set the sigpipe to ignore. We have non-blocking sockets and handle the return errors.
+      sighandler_t old_handler = signal( SIGPIPE, SIG_IGN );
+      // If the user set a specific handler, restore that one.
+      if ( old_handler != SIG_DFL )
+        signal( SIGPIPE, old_handler );
     }
     _instanceCount += 1;
 
