@@ -10,9 +10,51 @@
 namespace Stewardess
 {
 
+////////////////////////////////////////////////////////////////////////////////
+  // Forward declarations
   class HTTPPayload;
 
 
+////////////////////////////////////////////////////////////////////////////////
+  // HTTP request object
+
+  class HTTPRequest
+  {
+    private:
+      typedef std::map< std::string, std::string > QueryMap;
+    public:
+      typedef QueryMap::iterator QueryIterator;
+
+    private:
+      std::string _path;
+      std::string _fragment;
+      QueryMap _query;
+      
+    public:
+      HTTPRequest();
+      HTTPRequest( std::string );
+
+      const std::string& getPath() const { return _path; }
+      const std::string& getFragment() const { return _fragment; }
+      std::string getQuery( std::string ) const;
+      size_t size() const { return _query.size(); }
+
+
+      void decode( std::string );
+
+      std::string encode() const;
+
+      friend std::istream& operator>>( std::istream&, HTTPRequest& );
+      friend std::ostream& operator<<( std::ostream&, const HTTPRequest& );
+  };
+
+
+  std::istream& operator>>( std::istream&, HTTPRequest& );
+  std::ostream& operator<<( std::ostream&, const HTTPRequest& );
+
+
+////////////////////////////////////////////////////////////////////////////////
+  // Serialization functions
   class HTTPSerializer : public Serializer
   {
     private:
@@ -32,7 +74,8 @@ namespace Stewardess
   };
 
 
-
+////////////////////////////////////////////////////////////////////////////////
+  // The complete payload
   class HTTPPayload : public Payload
   {
     friend class HTTPSerializer;
@@ -67,7 +110,7 @@ namespace Stewardess
       MethodType _method;
 
       // The request string if it is a request
-      std::string _request;
+      HTTPRequest _request;
 
       // The version string
       std::string _version;
@@ -108,7 +151,7 @@ namespace Stewardess
       MethodType getMethod() const { return _method; }
 
       // Return a reference to the request string
-      const std::string& getRequest() const { return _request; }
+      const HTTPRequest& getRequest() const { return _request; }
 
       // Return a requested header value. Returns an empty string if it doesn't exist
       std::string getHeader( std::string ) const;

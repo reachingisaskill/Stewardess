@@ -17,6 +17,10 @@ namespace Stewardess
 
   std::string getStringFromResponse( HTTPPayload::ResponseType );
 
+  char percentDecode( char, char );
+
+  void percentEncode( std::string&, char );
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,7 +51,7 @@ namespace Stewardess
     {
       request_string  = MethodStrings[ payload->_method ];
       request_string += ' ';
-      request_string += payload->_request;
+      request_string += payload->_request.encode();
       request_string += ' ';
       request_string += payload->_version;
       request_string += (char) 13;
@@ -395,6 +399,302 @@ namespace Stewardess
         break;
     }
 //    return std::string( "200 OK" );
+  }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+  // HTTP Request object
+
+  HTTPRequest::HTTPRequest() :
+    _path(),
+    _fragment(),
+    _query()
+  {
+  }
+
+
+  HTTPRequest::HTTPRequest( std::string raw ) :
+    _path(),
+    _fragment(),
+    _query()
+  {
+    this->decode( raw );
+  }
+
+
+  std::string HTTPRequest::getQuery( std::string key ) const
+  {
+    QueryMap::const_iterator found = _query.find( key );
+    if ( found == _query.end() )
+    {
+      return std::string( "" );
+    }
+    else
+    {
+      return found->second;
+    }
+  }
+
+
+  void HTTPRequest::decode( std::string raw )
+  {
+    std::string::iterator it = raw.begin();
+
+    // Path
+    while ( it != raw.end() )
+    {
+      if ( *it == '?' || *it == '#' ) break;
+      else if ( *it == '%' )
+      {
+        ++it;
+        if ( it != raw.end() )
+        {
+          char temp = *it++;
+          if ( it != raw.end() )
+          {
+            _path.push_back( percentDecode( temp, *it++ ) );
+          }
+        }
+      }
+      else _path.push_back( *it++ );
+    }
+
+    // Query
+    if ( it != raw.end() && *it == '?' )
+    {
+      ++it;
+      std::string current_key;
+      std::string current_value;
+
+      while ( it != raw.end() )
+      {
+        if ( *it == '#' ) break;
+        else if ( *it == '%' )
+        {
+          ++it;
+          if ( it != raw.end() )
+          {
+            char temp = *it++;
+            if ( it != raw.end() )
+            {
+              current_value.push_back( percentDecode( temp, *it ) );
+            }
+          }
+        }
+        else if ( *it == '=' )
+        {
+          current_key = current_value;
+          current_value.clear();
+        }
+        else if ( *it == '&' )
+        {
+          _query.insert( std::make_pair( current_key, current_value ) );
+          current_key.clear();
+          current_value.clear();
+        }
+        else
+        {
+          current_value.push_back( *it );
+        }
+        ++it;
+      }
+
+      _query.insert( std::make_pair( current_key, current_value ) );
+    }
+
+    // Fragment
+    if ( it != raw.end() && *it == '#' )
+    {
+      ++it;
+      while ( it != raw.end() )
+      {
+        if ( *it == '%' )
+        {
+          ++it;
+          if ( it != raw.end() )
+          {
+            char temp = *it++;
+            if ( it != raw.end() )
+            {
+              _fragment.push_back( percentDecode( temp, *it++ ) );
+            }
+          }
+        }
+        else
+        {
+          _fragment.push_back( *it++ );
+        }
+      }
+    }
+  }
+
+
+  std::string HTTPRequest::encode() const
+  {
+    std::string result;
+
+    for ( std::string::const_iterator it = _path.begin(); it != _path.end(); ++it )
+    {
+      if ( ( *it >= 48 && *it <= 57 ) || ( *it >= 97 && *it <= 122 ) || ( *it >= 65 && *it <= 90 ) ||
+           (*it == '~') || (*it == '_') || (*it == '-') || (*it =='.' ) || (*it == '/') )
+      {
+        result.push_back( *it );
+      }
+      else percentEncode( result, *it );
+    }
+
+
+    if ( _query.size() )
+    {
+      result.push_back( '?' );
+      QueryMap::const_iterator qit = _query.begin();
+      while ( true )
+      {
+        for ( std::string::const_iterator first_it = qit->first.begin(); first_it != qit->first.end(); ++first_it )
+        {
+          if ( ( *first_it >= 48 && *first_it <= 57 ) || ( *first_it >= 97 && *first_it <= 122 ) || ( *first_it >= 65 && *first_it <= 90 ) ||
+               (*first_it == '~') || (*first_it == '_') || (*first_it == '-') || (*first_it =='.' ) )
+          {
+            result.push_back( *first_it );
+          }
+          else percentEncode( result, *first_it );
+        }
+
+        result.push_back( '=' );
+
+        for ( std::string::const_iterator second_it = qit->second.begin(); second_it != qit->second.end(); ++second_it )
+        {
+          if ( ( *second_it >= 48 && *second_it <= 57 ) || ( *second_it >= 97 && *second_it <= 122 ) || ( *second_it >= 65 && *second_it <= 90 ) ||
+               (*second_it == '~') || (*second_it == '_') || (*second_it == '-') || (*second_it =='.' ) )
+          {
+            result.push_back( *second_it );
+          }
+          else percentEncode( result, *second_it );
+        }
+
+        if ( ++qit == _query.end() )
+        {
+          break;
+        }
+        else
+        {
+          result.push_back( '&' );
+        }
+      }
+    }
+    if ( _fragment.size() )
+    {
+      result.push_back( '#' );
+
+      for ( std::string::const_iterator it = _fragment.begin(); it != _fragment.end(); ++it )
+      {
+        if ( ( *it >= 48 && *it <= 57 ) || ( *it >= 97 && *it <= 122 ) || ( *it >= 65 && *it <= 90 ) ||
+             (*it == '~') || (*it == '_') || (*it == '-') || (*it =='.' ) )
+        {
+          result.push_back( *it );
+        }
+        else percentEncode( result, *it );
+      }
+    }
+    return result;
+  }
+
+
+  std::istream& operator>>( std::istream& is, HTTPRequest& url )
+  {
+    std::string temp;
+    is >> temp;
+    url.decode( temp );
+    return is;
+  }
+
+
+  std::ostream& operator<<( std::ostream& os, const HTTPRequest& url )
+  {
+    os << url.encode();
+    return os;
+  }
+
+
+  char lookupHex( char c )
+  {
+    switch( c )
+    {
+      case '0' :
+        return 0;
+        break;
+      case '1' :
+        return 1;
+        break;
+      case '2' :
+        return 2;
+        break;
+      case '3' :
+        return 3;
+        break;
+      case '4' :
+        return 4;
+        break;
+      case '5' :
+        return 5;
+        break;
+      case '6' :
+        return 6;
+        break;
+      case '7' :
+        return 7;
+        break;
+      case '8' :
+        return 8;
+        break;
+      case '9' :
+        return 9;
+        break;
+      case 'a' :
+      case 'A' :
+        return 10;
+        break;
+      case 'b' :
+      case 'B' :
+        return 11;
+        break;
+      case 'c' :
+      case 'C' :
+        return 12;
+        break;
+      case 'd' :
+      case 'D' :
+        return 13;
+        break;
+      case 'e' :
+      case 'E' :
+        return 14;
+        break;
+      case'f' :
+      case 'F' :
+        return 15;
+        break;
+      default:
+        return 0;
+    }
+  }
+
+  char percentDecode( char first, char second )
+  {
+    char result = 0;
+
+    result |= ( lookupHex( first )  << 4 );
+    result |= ( lookupHex( second ) << 0 );
+
+    return result;
+  }
+
+  void percentEncode( std::string& dest, char c )
+  {
+    static const char HEX[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+    dest.push_back( '%' );
+    dest.push_back( HEX[ ( c & 0xF0 ) >> 4 ] );
+    dest.push_back( HEX[ ( c & 0x0F ) >> 0 ] );
   }
 
 }
