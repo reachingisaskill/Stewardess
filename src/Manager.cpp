@@ -258,30 +258,6 @@ namespace Stewardess
       _server.onStop();
 
       INFO_LOG( "Stewardess::Manager", "Operation stopped." );
-
-//      // Delete all the outstanding connections
-//      for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
-//      {
-//        delete (*it);
-//      }
-//      _closedConnections.clear();
-//
-//      for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
-//      {
-//        delete it->second;
-//      }
-//      _connections.clear();
-//
-//
-//      // Join all the worker threads.
-//      INFO_LOG( "Stewardess::Manager", "Joining worker threads" );
-//      for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
-//      {
-//        (*it)->theThread.join();
-//        event_base_free( (*it)->data.eventBase );
-//        delete (*it);
-//      }
-
     }
     catch( const Exception& ex )
     {
@@ -513,6 +489,10 @@ namespace Stewardess
       {
         _connections.erase( it );
       }
+      else
+      {
+        std::cerr << "WTF AM I DOING HERE!?" << std::endl;
+      }
     }
 
     // Push it to the closed list
@@ -521,18 +501,6 @@ namespace Stewardess
       _closedConnections.push_back( connection );
     }
   }
-
-
-  //void Manager::closeAllConnections()
-  //{
-  //  GuardLock lk( _manager._connectionsMutex );
-  //
-  //  ConnectionMap::iterator it = _manager._connections.begin();
-  //  while( it != _manager._connections.end() )
-  //  {
-  //    (*it)->close = true;
-  //  }
-  //}
 
 
   void Manager::cleanupClosedConnections()
