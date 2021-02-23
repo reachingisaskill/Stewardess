@@ -113,7 +113,9 @@ namespace Stewardess
     DEBUG_LOG( "Stewardess::SocketRead", "Socket Read called" );
 
     // Keep hold of a handle before anything happens
+    std::cout << "HANDLES = " << connection->getNumberHandles() << std::endl;
     Handle temp_handle = connection->requestHandle();
+    std::cout << "HANDLES = " << connection->getNumberHandles() << std::endl;
 
     ssize_t result;
     bool good = connection->isOpen();

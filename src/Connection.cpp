@@ -71,7 +71,7 @@ namespace Stewardess
 
   void Connection::close()
   {
-    DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << this->getConnectionID();
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << this->getConnectionID() << " References = " << _references;
 
     UniqueLock lk( _theMutex );
     bool close = _close;
@@ -86,6 +86,7 @@ namespace Stewardess
       // Damn C libraries and their lack of namespaces....
       ::close( _socket );
 
+      DEBUG_STREAM( "Stewardess::Connection" ) << "IN CLOSE " << this->getConnectionID() << " References = " << _references;
       // If no one else cares we suicide.
       if ( _references == 0 )
         manager.closeConnection( this );

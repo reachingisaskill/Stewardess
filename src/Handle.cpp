@@ -17,6 +17,7 @@ namespace Stewardess
   Handle::Handle( Connection* d ) :
     _connection( d )
   {
+    _connection->incrementReferences();
   }
 
 

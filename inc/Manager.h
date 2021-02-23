@@ -149,10 +149,11 @@ namespace Stewardess
 
 
       // Makes a new connection to the requested host and port number. Blocks while running.
-      Handle connectTo( std::string, std::string );
+      //  Optional identifier to give the connection object
+      Handle connectTo( std::string, std::string, UniqueID = 0 );
 
       // Requests a new connection to provided host and port number. Runs asynchronously.
-      void requestConnectTo( std::string, std::string );
+      void requestConnectTo( std::string, std::string, UniqueID = 0 );
 
       // Returns the number of current active connections
       size_t getNumberConnections() const;

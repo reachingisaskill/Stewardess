@@ -308,7 +308,7 @@ namespace Stewardess
   }
 
 
-  Handle Manager::connectTo( std::string host, std::string port )
+  Handle Manager::connectTo( std::string host, std::string port, UniqueID id )
   {
     // Find the server address
     evutil_addrinfo address_hints;
@@ -373,6 +373,7 @@ namespace Stewardess
 
     // Create the connection 
     Connection* connection = new Connection( *address_answer->ai_addr, *this, worker_base, new_socket );
+    connection->setIdentifier( id );
     connection->bufferSize =  _configuration.bufferSize;
 
 
