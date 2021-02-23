@@ -30,7 +30,7 @@ namespace Stewardess
       std::mutex _theMutex;
 
       // Flag to trigger the destruction of the connection data
-      bool _close;
+      std::atomic_bool _close;
 
       // The socket we are connected through
       evutil_socket_t _socket;

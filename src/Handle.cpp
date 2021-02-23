@@ -23,6 +23,10 @@ namespace Stewardess
 
   Handle::~Handle()
   {
+    if ( _connection )
+    {
+      _connection->decrementReferences();
+    }
   }
 
 

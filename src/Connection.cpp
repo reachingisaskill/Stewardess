@@ -42,6 +42,7 @@ namespace Stewardess
       event_free( _writeEvent );
     if ( serializer != nullptr )
       delete serializer;
+
     DEBUG_STREAM( "Stewardess::Connection" ) << "Deleted connection " << this->getConnectionID();
   }
 
@@ -57,11 +58,7 @@ namespace Stewardess
     _references -= 1;
     if ( _references == 0 )
     {
-      UniqueLock lk( _theMutex );
-      bool close = _close;
-      lk.unlock();
-
-      if ( close )
+      if ( _close )
       {
         manager.closeConnection( this );
       }
@@ -73,6 +70,7 @@ namespace Stewardess
   {
     DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << this->getConnectionID() << " References = " << _references;
 
+    // Lock here in case two threads try to close the connection at the same time!
     UniqueLock lk( _theMutex );
     bool close = _close;
     _close = true;
@@ -86,7 +84,6 @@ namespace Stewardess
       // Damn C libraries and their lack of namespaces....
       ::close( _socket );
 
-      DEBUG_STREAM( "Stewardess::Connection" ) << "IN CLOSE " << this->getConnectionID() << " References = " << _references;
       // If no one else cares we suicide.
       if ( _references == 0 )
         manager.closeConnection( this );
@@ -96,7 +93,6 @@ namespace Stewardess
 
   bool Connection::isOpen()
   {
-    GuardLock lk( _theMutex );
     return !_close;
   }
 
@@ -118,7 +114,6 @@ namespace Stewardess
 
   Handle Connection::requestHandle()
   {
-    GuardLock lk( _theMutex );
     if ( _close )
       return Handle();
     else
