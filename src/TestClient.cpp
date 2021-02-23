@@ -30,7 +30,7 @@ namespace Stewardess
 
   void TestClient::onRead( Handle c, Payload* p )
   {
-    std::cout << "RECEIVED: From connection: " << c.getIDNumber() <<  "  --  " << ((TestPayload*)p)->getMessage() << std::endl;
+    std::cout << "RECEIVED: From connection: " << c.getConnectionID() <<  "  --  " << ((TestPayload*)p)->getMessage() << std::endl;
     delete p;
   }
 
@@ -81,7 +81,7 @@ namespace Stewardess
       if ( _tickCounter > 5000 )
       {
         INFO_LOG( "TestClient::OnTick", "Sending message" );
-        std::cout << "SENDING: To connection: " << _handle.getIDNumber() <<  "  --  Me again" << std::endl;
+        std::cout << "SENDING: To connection: " << _handle.getConnectionID() <<  "  --  Me again" << std::endl;
         _tickCounter -= 5000;
         TestPayload p( "Me again" );
         _handle.write( &p );

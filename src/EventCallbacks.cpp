@@ -88,8 +88,8 @@ namespace Stewardess
   {
     Manager* data = (Manager*)arg;
 
-    // If the closed connections have no handles, delete them
-    data->cleanupClosedConnections();
+//    // If the closed connections have no handles, delete them
+//    data->cleanupClosedConnections();
 
     // Update the tick time stamp
     TimeStamp new_stamp = std::chrono::system_clock::now();
@@ -128,9 +128,10 @@ namespace Stewardess
       {
         if ( result == 0 ) // EOF i.e. socket closed!
         {
-          DEBUG_STREAM( "Stewardess::SocketRead" ) << "End of file. Connection: " << connection->getIDNumber();
+          DEBUG_STREAM( "Stewardess::SocketRead" ) << "End of file. Connection: " << connection->getConnectionID();
+          Handle temp_handle = connection->requestHandle();
           connection->close();
-          connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Disconnect );
+          connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::Disconnect );
           delete[] raw_buffer;
           break;
         }
@@ -142,9 +143,10 @@ namespace Stewardess
         }
         else
         {
-          ERROR_STREAM( "Stewardess::SocketRead" ) << "Connection Error. Connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
+          ERROR_STREAM( "Stewardess::SocketRead" ) << "Connection Error. Connection: " << connection->getConnectionID() << ". Error: " << std::strerror( errno );
+          Handle temp_handle = connection->requestHandle();
           connection->close();
-          connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+          connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::DisconnectError );
           delete[] raw_buffer;
           break;
         }
@@ -215,17 +217,19 @@ namespace Stewardess
           }
           else if ( errno == EAGAIN )
           {
-            WARN_STREAM( "Stewardess::SocketWrite" ) << "Connection closed during write operation: " << connection->getIDNumber();
+            WARN_STREAM( "Stewardess::SocketWrite" ) << "Connection closed during write operation: " << connection->getConnectionID();
+            Handle temp_handle = connection->requestHandle();
             connection->close();
-            connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+            connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::DisconnectError );
             good = false;
             break;
           }
           else 
           {
-            ERROR_STREAM( "Stewardess::WriteSocket" ) << "An error occured on connection: " << connection->getIDNumber() << ". Error: " << std::strerror( errno );
+            ERROR_STREAM( "Stewardess::WriteSocket" ) << "An error occured on connection: " << connection->getConnectionID() << ". Error: " << std::strerror( errno );
+            Handle temp_handle = connection->requestHandle();
             connection->close();
-            connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::DisconnectError );
+            connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::DisconnectError );
             good = false;
             break;
           }

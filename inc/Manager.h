@@ -48,10 +48,6 @@ namespace Stewardess
       ConnectionMap _connections;
       mutable std::mutex _connectionsMutex;
 
-      // Queue of the connection that have been signalled to close
-      ConnectionList _closedConnections;
-      mutable std::mutex _closedConnectionsMutex;
-
 
       // Control event base runs listener, signal handling and server ticks runs listener, signal handling and server ticks
       event_base* _eventBase;
@@ -150,9 +146,6 @@ namespace Stewardess
       // Return the uptime in seconds
       Seconds getUpTime() const;
 
-
-      // Return a pointer to the requested connection
-      Handle requestHandle( UniqueID );
 
 
       // Makes a new connection to the requested host and port number. Blocks while running.

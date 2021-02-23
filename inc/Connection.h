@@ -19,14 +19,9 @@ namespace Stewardess
   class Connection
   {
     private:
-      static HugeID _idCounter;
-      static std::mutex _idCounterMutex;
-
       // Count the number of references to this data
-      ReferenceCounter _references;
+      std::atomic<size_t> _references;
 
-      // Store the creation id
-      HugeID _idNumber;
 
       // Store the assigned id
       UniqueID _identifier;
@@ -66,6 +61,7 @@ namespace Stewardess
       Connection operator=( const Connection& ) = delete;
       Connection operator=( Connection&& ) = delete;
 
+
       // Addres of the client bound to the socket
       const sockaddr socketAddress;
 
@@ -92,7 +88,7 @@ namespace Stewardess
 
     
       // Return the ID number of its creation
-      HugeID getIDNumber() const { return _idNumber; }
+      ConnectionID getConnectionID() const { return (ConnectionID)this; }
 
 
       // Return the unique user id for this connection
@@ -115,6 +111,13 @@ namespace Stewardess
 
       // Return the last time it was accessed
       TimeStamp getAccess() const;
+
+
+      // Increment the reference counter
+      void incrementReferences();
+
+      // Decrement the reference counter
+      void decrementReferences();
 
   };
 

@@ -7,10 +7,10 @@ namespace Stewardess
 
   void TestServer::onRead( Handle c, Payload* p )
   {
-    std::cout << "RECEIVED: From connection: " << c.getIDNumber() <<  "  --  " << ((TestPayload*)p)->getMessage() << std::endl;
+    std::cout << "RECEIVED: From connection: " << c.getConnectionID() <<  "  --  " << ((TestPayload*)p)->getMessage() << std::endl;
     delete p;
 
-    std::cout << "SENDING: To connection: " << c.getIDNumber() <<  "  --  Cheers bruh" << std::endl;
+    std::cout << "SENDING: To connection: " << c.getConnectionID() <<  "  --  Cheers bruh" << std::endl;
     TestPayload reply( std::string( "Cheers bruh" ) );
     c.write( &reply );
   }

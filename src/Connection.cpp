@@ -8,13 +8,8 @@
 namespace Stewardess
 {
 
-  HugeID Connection::_idCounter = 0;
-  std::mutex Connection::_idCounterMutex;
-
-
   Connection::Connection( sockaddr address, Manager& manager, event_base* worker_base, evutil_socket_t new_socket ) :
-    _references(),
-    _idNumber( 0 ),
+    _references( 0 ),
     _identifier( 0 ),
     _close( false ),
     _socket( new_socket ),
@@ -28,11 +23,6 @@ namespace Stewardess
     bufferSize( 4096 )
   {
     {
-      GuardLock lk( _idCounterMutex );
-      _idNumber = _idCounter++;
-    }
-
-    {
       GuardLock lk( _theMutex );
       _readEvent = event_new( worker_base, new_socket, EV_READ|EV_PERSIST, readCB, this );
       _writeEvent = event_new( worker_base, new_socket, EV_WRITE, writeCB, this );
@@ -40,26 +30,41 @@ namespace Stewardess
       event_add( _readEvent, nullptr );
     }
 
-    DEBUG_STREAM( "Stewardess::Connection" ) << "Created connection " << _idNumber;
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Created connection " << this->getConnectionID();
   }
 
 
   Connection::~Connection()
   {
-    GuardLock lk( _theMutex );
     if ( _readEvent != nullptr )
       event_free( _readEvent );
     if ( _writeEvent != nullptr )
       event_free( _writeEvent );
     if ( serializer != nullptr )
       delete serializer;
-    DEBUG_STREAM( "Stewardess::Connection" ) << "Deleted connection " << _idNumber;
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Deleted connection " << this->getConnectionID();
+  }
+
+
+  void Connection::incrementReferences()
+  {
+    _references += 1;
+  }
+
+
+  void Connection::decrementReferences()
+  {
+    _references -= 1;
+    if ( _references == 0 && _close )
+    {
+      manager.closeConnection( this );
+    }
   }
 
 
   void Connection::close()
   {
-    DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << _idNumber;
+    DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << this->getConnectionID();
     GuardLock lk( _theMutex );
     if ( ! _close )
     {
@@ -70,7 +75,9 @@ namespace Stewardess
       // Damn C libraries and their lack of namespaces....
       ::close( _socket );
 
-      manager.closeConnection( this );
+      // If no one else cares we suicide.
+      if ( _references == 0 )
+        manager.closeConnection( this );
     }
   }
 
@@ -93,26 +100,23 @@ namespace Stewardess
   void Connection::setIdentifier( UniqueID num )
   {
     GuardLock lk( _theMutex );
-    if ( _identifier == 0 )
-    {
-      _identifier = num;
-    }
-    else
-    {
-      WARN_STREAM( "Connection::setIdentifier" ) << "Attempting to set Identifier when one already exists for connection : " << _idNumber;
-    }
+    _identifier = num;
   }
 
 
   Handle Connection::requestHandle()
   {
-    return Handle( _references, this );
+    GuardLock lk( _theMutex );
+    if ( _close )
+      return Handle();
+    else
+      return Handle( this );
   }
 
 
   size_t Connection::getNumberHandles() const
   {
-    return _references.getNumber();
+    return _references;
   }
 
 

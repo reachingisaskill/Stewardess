@@ -3,7 +3,6 @@
 #define STEWARDESS_HANDLE_H_
 
 #include "Definitions.h"
-#include "ReferenceCounter.h"
 
 
 namespace Stewardess
@@ -28,23 +27,24 @@ namespace Stewardess
     friend class Connection;
     private:
       // Hidden connection data
-      Connection* _data;
-
-      // Keep track of how many copies there are
-      ReferenceCounter _counter;
+      Connection* _connection;
 
 
       // Users can't create active handles
       // Create a handle for the requested connection
-      Handle( ReferenceCounter, Connection* );
-
+      Handle( Connection* );
 
     public:
       // Create a null handle for connections that don't exist
       Handle();
-
       // Default destructor
       ~Handle();
+
+      // Copy and assignment functons
+      Handle( const Handle& );
+      Handle( Handle&& );
+      Handle& operator=( const Handle& );
+      Handle& operator=( Handle&& );
 
 
       // Return the address
@@ -68,7 +68,7 @@ namespace Stewardess
 
 
       // Returns the creation number
-      HugeID getIDNumber() const;
+      ConnectionID getConnectionID() const;
 
 
       // Returns the user id number
@@ -88,11 +88,11 @@ namespace Stewardess
 
 
       // Return false for a dead connection
-      bool exists() const { return _data != nullptr; }
+      bool exists() const { return _connection != nullptr; }
 
 
       // Returns false for a dead connection
-      operator bool() const { return _data != nullptr; }
+      operator bool() const { return _connection != nullptr; }
   };
 
 }

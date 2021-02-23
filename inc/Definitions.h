@@ -25,10 +25,12 @@ namespace Stewardess
   const timeval defaultTickTime = { 2, 0 };
 
 
+  // Forward declare some classes
   class Connection;
   class Payload;
   class Buffer;
   class ThreadInfo;
+
 
   // Serialization structures
   typedef std::queue< Buffer* > BufferQueue;
@@ -40,13 +42,12 @@ namespace Stewardess
   typedef std::chrono::milliseconds Milliseconds;
   typedef std::chrono::seconds Seconds;
 
-  // Really big unique id type
-  typedef long long unsigned int HugeID;
-  typedef size_t UniqueID;
+  // Unique identifier types
+  typedef std::intptr_t ConnectionID;
+  typedef long long int UniqueID;
 
   // Common arry-like structures
-  typedef std::map< size_t, Connection* > ConnectionMap;
-  typedef std::list< Connection* > ConnectionList;
+  typedef std::map< ConnectionID, Connection* > ConnectionMap;
   typedef std::vector< ThreadInfo* > ThreadVector;
 
   // Short hands for mutex locks

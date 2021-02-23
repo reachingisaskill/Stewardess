@@ -29,7 +29,6 @@ namespace Stewardess
     _server( server ),
     _abort( false ),
     _connections(),
-    _closedConnections(),
     _eventBase( nullptr ),
     _listener( nullptr ),
     _signalEvent( nullptr ),
@@ -72,20 +71,15 @@ namespace Stewardess
 
   void Manager::_cleanup()
   {
-    GuardLock lk_closed( _closedConnectionsMutex );
-    GuardLock lk_connections( _connectionsMutex );
-    // Delete all the outstanding connections
-    for (ConnectionList::iterator it = _closedConnections.begin(); it != _closedConnections.end(); ++it )
     {
-      delete (*it);
+      GuardLock lk( _connectionsMutex );
+      // Delete all the outstanding connections
+      for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
+      {
+        delete it->second;
+      }
+      _connections.clear();
     }
-    _closedConnections.clear();
-
-    for (ConnectionMap::iterator it = _connections.begin(); it != _connections.end(); ++it )
-    {
-      delete it->second;
-    }
-    _connections.clear();
 
 
     // Join all the worker threads.
@@ -138,22 +132,6 @@ namespace Stewardess
   Seconds Manager::getUpTime() const
   {
     return std::chrono::duration_cast<Seconds>( std::chrono::system_clock::now() - _serverStartTime );
-  }
-
-
-  Handle Manager::requestHandle( UniqueID uid )
-  {
-    GuardLock lk( _connectionsMutex );
-
-    ConnectionMap::iterator found = _connections.find( uid );
-    if ( found == _connections.end() )
-    {
-      return Handle();
-    }
-    else 
-    {
-      return found->second->requestHandle();
-    }
   }
 
 
@@ -475,50 +453,22 @@ namespace Stewardess
   void Manager::addConnection( Connection* connection )
   {
     GuardLock lk( _connectionsMutex );
-    _connections[ connection->getIDNumber() ] = connection;
+    _connections[ connection->getConnectionID() ] = connection;
   }
 
 
   void Manager::closeConnection( Connection* connection )
   {
-    // Remove it from the active map
+    GuardLock lk( _connectionsMutex );
+    ConnectionMap::iterator it = _connections.find( connection->getConnectionID() );
+    if ( it != _connections.end() )
     {
-      GuardLock lk( _connectionsMutex );
-      ConnectionMap::iterator it = _connections.find( connection->getIDNumber() );
-      if ( it != _connections.end() )
-      {
-        _connections.erase( it );
-      }
-      else
-      {
-        std::cerr << "WTF AM I DOING HERE!?" << std::endl;
-      }
+      delete it->second;
+      _connections.erase( it );
     }
-
-    // Push it to the closed list
+    else
     {
-      GuardLock lk( _closedConnectionsMutex );
-      _closedConnections.push_back( connection );
-    }
-  }
-
-
-  void Manager::cleanupClosedConnections()
-  {
-    GuardLock lk( _closedConnectionsMutex );
-
-    ConnectionList::iterator it = _closedConnections.begin();
-    while( it != _closedConnections.end() )
-    {
-      if ( (*it)->getNumberHandles() == 0 )
-      {
-        delete (*it);
-        it = _closedConnections.erase( it );
-      }
-      else
-      {
-        ++it;
-      }
+      ERROR_LOG( "Manager::CloseConnection", "Unknown connection requested closing...?" );
     }
   }
 

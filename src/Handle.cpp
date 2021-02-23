@@ -9,15 +9,13 @@ namespace Stewardess
 {
 
   Handle::Handle() :
-    _data( nullptr ),
-    _counter()
+    _connection( nullptr )
   {
   }
 
 
-  Handle::Handle( ReferenceCounter counter, Connection* d ) :
-    _data( d ),
-    _counter( counter )
+  Handle::Handle( Connection* d ) :
+    _connection( d )
   {
   }
 
@@ -27,11 +25,58 @@ namespace Stewardess
   }
 
 
+  Handle::Handle( const Handle& other ) :
+    _connection( other._connection )
+  {
+    if ( _connection )
+    {
+      _connection->incrementReferences();
+    }
+  }
+
+
+  Handle::Handle( Handle&& other ) :
+    _connection( std::exchange( other._connection, nullptr ) )
+  {
+  }
+
+
+  Handle& Handle::operator=( const Handle& other )
+  {
+    if ( _connection )
+    {
+      _connection->decrementReferences();
+    }
+
+    _connection = other._connection;
+
+    if ( _connection )
+    {
+      _connection->incrementReferences();
+    }
+
+    return *this;
+  }
+
+
+  Handle& Handle::operator=( Handle&& other )
+  {
+    if ( _connection )
+    {
+      _connection->decrementReferences();
+    }
+
+    _connection = std::exchange( other._connection, nullptr );
+
+    return *this;
+  }
+
+
   std::string Handle::getIPAddress() const
   {
-    if ( _data->socketAddress.sa_family == AF_INET )
+    if ( _connection->socketAddress.sa_family == AF_INET )
     {
-      sockaddr_in* address_pointer = (sockaddr_in*)&_data->socketAddress;
+      sockaddr_in* address_pointer = (sockaddr_in*)&_connection->socketAddress;
       // 40 Allows for IPv6 + \0
       char address_string[40];
       evutil_inet_ntop( address_pointer->sin_family, &address_pointer->sin_addr, address_string, 40 );
@@ -43,11 +88,12 @@ namespace Stewardess
     }
   }
 
+
   int Handle::getPortNumber() const
   {
-    if ( _data->socketAddress.sa_family == AF_INET )
+    if ( _connection->socketAddress.sa_family == AF_INET )
     {
-      sockaddr_in* address_pointer = (sockaddr_in*)&_data->socketAddress;
+      sockaddr_in* address_pointer = (sockaddr_in*)&_connection->socketAddress;
       return address_pointer->sin_port;
     }
     else
@@ -59,49 +105,49 @@ namespace Stewardess
 
   bool Handle::isOpen() const
   {
-    return _data->isOpen();
+    return _connection->isOpen();
   }
 
 
   void Handle::close() const
   {
-    _data->close();
+    _connection->close();
   }
 
 
   void Handle::write( Payload* p ) const
   {
-    _data->write( p );
+    _connection->write( p );
   }
 
 
-  HugeID Handle::getIDNumber() const
+  ConnectionID Handle::getConnectionID() const
   {
-    return _data->getIDNumber();
+    return _connection->getConnectionID();
   }
 
 
   UniqueID Handle::getIdentifier() const
   {
-    return _data->getIdentifier();
+    return _connection->getIdentifier();
   }
 
 
   void Handle::setIdentifier( UniqueID id )
   {
-    _data->setIdentifier( id );
+    _connection->setIdentifier( id );
   }
 
 
   TimeStamp Handle::creationTime() const
   {
-    return _data->getCreationTime();
+    return _connection->getCreationTime();
   }
 
 
   TimeStamp Handle::lastAccess() const
   {
-    return _data->getAccess();
+    return _connection->getAccess();
   }
 
 }

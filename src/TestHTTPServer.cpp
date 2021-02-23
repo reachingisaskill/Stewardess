@@ -11,7 +11,7 @@ namespace Stewardess
   void TestHTTPServer::onRead( Handle handle, Payload* p )
   {
     HTTPPayload* payload = (HTTPPayload*)p;
-    std::cout << "RECEIVED: From connection: " << handle.getIDNumber() << '\n' << payload->print() << std::endl;
+    std::cout << "RECEIVED: From connection: " << handle.getConnectionID() << '\n' << payload->print() << std::endl;
     delete p;
 
     HTTPPayload response( HTTPPayload::Ok, HTMLHello );
@@ -22,7 +22,7 @@ namespace Stewardess
 
   void TestHTTPServer::onWrite( Handle handle )
   {
-    std::cout << "Write complete. Closing connection: " << handle.getIDNumber() << std::endl;
+    std::cout << "Write complete. Closing connection: " << handle.getConnectionID() << std::endl;
     handle.close();
   }
 
