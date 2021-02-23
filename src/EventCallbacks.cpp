@@ -112,6 +112,9 @@ namespace Stewardess
     Connection* connection = (Connection*)arg;
     DEBUG_LOG( "Stewardess::SocketRead", "Socket Read called" );
 
+    // Keep hold of a handle before anything happens
+    Handle temp_handle = connection->requestHandle();
+
     ssize_t result;
     bool good = connection->isOpen();
 
@@ -129,7 +132,6 @@ namespace Stewardess
         if ( result == 0 ) // EOF i.e. socket closed!
         {
           DEBUG_STREAM( "Stewardess::SocketRead" ) << "End of file. Connection: " << connection->getConnectionID();
-          Handle temp_handle = connection->requestHandle();
           connection->close();
           connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::Disconnect );
           delete[] raw_buffer;
@@ -144,7 +146,6 @@ namespace Stewardess
         else
         {
           ERROR_STREAM( "Stewardess::SocketRead" ) << "Connection Error. Connection: " << connection->getConnectionID() << ". Error: " << std::strerror( errno );
-          Handle temp_handle = connection->requestHandle();
           connection->close();
           connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::DisconnectError );
           delete[] raw_buffer;
@@ -166,14 +167,14 @@ namespace Stewardess
     while ( ! connection->serializer->payloadEmpty() )
     {
       DEBUG_LOG( "Stewardess::SocketRead", "Calling on read handler" );
-      connection->manager._server.onRead( connection->requestHandle(), connection->serializer->getPayload() );
+      connection->manager._server.onRead( temp_handle, connection->serializer->getPayload() );
     }
 
     while( ! connection->serializer->errorEmpty() )
     {
       const char* error = connection->serializer->getError();
       ERROR_STREAM( "Stewardess::SocketRead" ) << "Serializer error occured: " << error;
-      connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
+      connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::SerializationError, error );
     }
 
     DEBUG_LOG( "Stewardess::SocketRead", "Socket Read Finished" );
@@ -187,6 +188,9 @@ namespace Stewardess
     Serializer* serializer = connection->serializer;
     DEBUG_LOG( "Stewardess::SocketWrite", "Socket Write Called" );
 
+    // Keep hold of a handle before anything happens
+    Handle temp_handle = connection->requestHandle();
+
     ssize_t result;
     ssize_t write_count;
     bool good = connection->isOpen();
@@ -195,7 +199,7 @@ namespace Stewardess
     {
       const char* error = connection->serializer->getError();
       ERROR_STREAM( "Stewardess::SocketWrite" ) << "Serializer error occured: " << error;
-      connection->manager._server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::SerializationError, error );
+      connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::SerializationError, error );
     }
 
     while ( ! serializer->bufferEmpty() && good )
@@ -218,7 +222,6 @@ namespace Stewardess
           else if ( errno == EAGAIN )
           {
             WARN_STREAM( "Stewardess::SocketWrite" ) << "Connection closed during write operation: " << connection->getConnectionID();
-            Handle temp_handle = connection->requestHandle();
             connection->close();
             connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::DisconnectError );
             good = false;
@@ -227,7 +230,6 @@ namespace Stewardess
           else 
           {
             ERROR_STREAM( "Stewardess::WriteSocket" ) << "An error occured on connection: " << connection->getConnectionID() << ". Error: " << std::strerror( errno );
-            Handle temp_handle = connection->requestHandle();
             connection->close();
             connection->manager._server.onConnectionEvent( temp_handle, ConnectionEvent::DisconnectError );
             good = false;
@@ -250,7 +252,7 @@ namespace Stewardess
     if ( good )
     {
       DEBUG_LOG( "Stewardess::SocketWrite", "Calling on write handler" );
-      connection->manager._server.onWrite( connection->requestHandle() );
+      connection->manager._server.onWrite( temp_handle );
     }
 
     DEBUG_LOG( "Stewardess::SocketWrite", "Socket Write Finished" );

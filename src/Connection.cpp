@@ -55,9 +55,16 @@ namespace Stewardess
   void Connection::decrementReferences()
   {
     _references -= 1;
-    if ( _references == 0 && _close )
+    if ( _references == 0 )
     {
-      manager.closeConnection( this );
+      UniqueLock lk( _theMutex );
+      bool close = _close;
+      lk.unlock();
+
+      if ( close )
+      {
+        manager.closeConnection( this );
+      }
     }
   }
 
@@ -65,10 +72,14 @@ namespace Stewardess
   void Connection::close()
   {
     DEBUG_STREAM( "Stewardess::Connection" ) << "Close requested " << this->getConnectionID();
-    GuardLock lk( _theMutex );
-    if ( ! _close )
+
+    UniqueLock lk( _theMutex );
+    bool close = _close;
+    _close = true;
+    lk.unlock();
+
+    if ( ! close )
     {
-      _close = true;
       event_del( _readEvent );
       event_del( _writeEvent );
 
