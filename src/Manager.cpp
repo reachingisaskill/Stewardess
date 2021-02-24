@@ -455,6 +455,7 @@ namespace Stewardess
   {
     GuardLock lk( _connectionsMutex );
     _connections[ connection->getConnectionID() ] = connection;
+    connection->open();
   }
 
 
@@ -469,7 +470,7 @@ namespace Stewardess
     }
     else
     {
-      ERROR_LOG( "Manager::CloseConnection", "Unknown connection requested closing...?" );
+      WARN_STREAM( "Manager::CloseConnection" ) << "Connection requested closing before initialised: " << connection->getConnectionID();
     }
   }
 

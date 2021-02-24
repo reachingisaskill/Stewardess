@@ -76,6 +76,10 @@ namespace Stewardess
       size_t bufferSize;
 
 
+      // Called by the manager to indicate that the connection handler is ready
+      void open( const timeval* = nullptr );
+
+
       // Set the close flag to true
       void close();
 

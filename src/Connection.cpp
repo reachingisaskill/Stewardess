@@ -20,21 +20,16 @@ namespace Stewardess
     _writeEvent( nullptr ),
     _destroyEvent( nullptr ),
     _connectionTime( std::chrono::system_clock::now() ),
-    _lastAccess( std::chrono::system_clock::now() ),
+    _lastAccess( _connectionTime ),
     socketAddress( address ),
     manager( manager ),
     serializer( manager._server.buildSerializer() ),
     bufferSize( 4096 )
   {
-    {
-      GuardLock lk( _theMutex );
-      _readEvent = event_new( worker_base, new_socket, EV_READ|EV_PERSIST, readCB, this );
-      _writeEvent = event_new( worker_base, new_socket, EV_WRITE, writeCB, this );
-      _destroyEvent = event_new( worker_base, new_socket, EV_TIMEOUT, destroyCB, this );
-
-      event_add( _readEvent, nullptr );
-    }
-
+    GuardLock lk( _theMutex );
+    _readEvent = event_new( worker_base, new_socket, EV_READ|EV_PERSIST, readCB, this );
+    _writeEvent = event_new( worker_base, new_socket, EV_WRITE, writeCB, this );
+    _destroyEvent = event_new( worker_base, new_socket, EV_TIMEOUT, destroyCB, this );
     DEBUG_STREAM( "Stewardess::Connection" ) << "Created connection " << this->getConnectionID();
   }
 
@@ -70,6 +65,12 @@ namespace Stewardess
         event_add( _destroyEvent, &immediately );
       }
     }
+  }
+
+
+  void Connection::open( const timeval* timeout )
+  {
+    event_add( _readEvent, timeout );
   }
 
 
