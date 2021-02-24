@@ -8,6 +8,9 @@
 namespace Stewardess
 {
 
+  const timeval immediately = { 0, 0 };
+
+
   Connection::Connection( sockaddr address, Manager& manager, event_base* worker_base, evutil_socket_t new_socket ) :
     _references( 0 ),
     _identifier( 0 ),
@@ -15,6 +18,7 @@ namespace Stewardess
     _socket( new_socket ),
     _readEvent( nullptr ),
     _writeEvent( nullptr ),
+    _destroyEvent( nullptr ),
     _connectionTime( std::chrono::system_clock::now() ),
     _lastAccess( std::chrono::system_clock::now() ),
     socketAddress( address ),
@@ -26,6 +30,7 @@ namespace Stewardess
       GuardLock lk( _theMutex );
       _readEvent = event_new( worker_base, new_socket, EV_READ|EV_PERSIST, readCB, this );
       _writeEvent = event_new( worker_base, new_socket, EV_WRITE, writeCB, this );
+      _destroyEvent = event_new( worker_base, new_socket, EV_TIMEOUT, destroyCB, this );
 
       event_add( _readEvent, nullptr );
     }
@@ -40,6 +45,8 @@ namespace Stewardess
       event_free( _readEvent );
     if ( _writeEvent != nullptr )
       event_free( _writeEvent );
+    if ( _destroyEvent != nullptr )
+      event_free( _destroyEvent );
     if ( serializer != nullptr )
       delete serializer;
 
@@ -60,7 +67,7 @@ namespace Stewardess
     {
       if ( _close )
       {
-        manager.closeConnection( this );
+        event_add( _destroyEvent, &immediately );
       }
     }
   }
@@ -86,7 +93,7 @@ namespace Stewardess
 
       // If no one else cares we suicide.
       if ( _references == 0 )
-        manager.closeConnection( this );
+        event_add( _destroyEvent, &immediately );
     }
   }
 

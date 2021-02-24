@@ -32,6 +32,10 @@ namespace Stewardess
       virtual void onStart() override;
 
 
+      // Called immediately after the server stops
+      virtual void onStop() override;
+
+
       // Called when a read event is triggered.
       virtual void onRead( Handle, Payload* ) override;
 

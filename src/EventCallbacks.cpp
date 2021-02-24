@@ -116,7 +116,7 @@ namespace Stewardess
     Handle temp_handle = connection->requestHandle();
 
     ssize_t result;
-    bool good = connection->isOpen();
+    bool good = connection->isOpen() && temp_handle;
 
     Buffer buffer;
 
@@ -193,7 +193,7 @@ namespace Stewardess
 
     ssize_t result;
     ssize_t write_count;
-    bool good = connection->isOpen();
+    bool good = connection->isOpen() && temp_handle;
 
     while( ! serializer->errorEmpty() )
     {
@@ -260,11 +260,20 @@ namespace Stewardess
   }
 
 
+  void destroyCB( evutil_socket_t /*fd*/, short /*flags*/, void* arg )
+  {
+    Connection* connection = (Connection*)arg;
+    DEBUG_LOG( "Stewardess::SocketClose", "Socket Close Called" );
+
+    connection->manager.closeConnection( connection );
+  }
+
+
   void workerTickCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   {
     WorkerData* data = (WorkerData*)arg;
 
-    // Set the timeout time to the log of the number of connections
+    // Re trigger the event
     event_add( data->tickEvent, &data->tickTime );
   }
 

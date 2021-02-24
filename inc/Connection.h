@@ -38,6 +38,7 @@ namespace Stewardess
       // Pointer to the read and write events
       event* _readEvent;
       event* _writeEvent;
+      event* _destroyEvent;
 
 
       // Time of creation

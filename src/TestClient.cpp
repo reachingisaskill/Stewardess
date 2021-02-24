@@ -28,6 +28,12 @@ namespace Stewardess
   }
 
 
+  void TestClient::onStop()
+  {
+    _handle.release();
+  }
+
+
   void TestClient::onRead( Handle c, Payload* p )
   {
     std::cout << "RECEIVED: From connection: " << c.getConnectionID() <<  "  --  " << ((TestPayload*)p)->getMessage() << std::endl;

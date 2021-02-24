@@ -77,6 +77,16 @@ namespace Stewardess
   }
 
 
+  void Handle::release()
+  {
+    if ( _connection )
+    {
+      _connection->decrementReferences();
+      _connection = nullptr;
+    }
+  }
+
+
   std::string Handle::getIPAddress() const
   {
     if ( _connection->socketAddress.sa_family == AF_INET )

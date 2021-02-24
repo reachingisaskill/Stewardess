@@ -47,6 +47,10 @@ namespace Stewardess
       Handle& operator=( Handle&& );
 
 
+      // Release the handle so that the connection can be fully closed
+      void release();
+
+
       // Return the address
       std::string getIPAddress() const;
 

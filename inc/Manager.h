@@ -26,6 +26,7 @@ namespace Stewardess
     friend void tickTimerCB( evutil_socket_t, short, void* );
     friend void readCB( evutil_socket_t, short, void* );
     friend void writeCB( evutil_socket_t, short, void* );
+    friend void destroyCB( evutil_socket_t, short, void* );
 
 
     private:
