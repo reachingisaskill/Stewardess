@@ -14,3 +14,7 @@ As it is based on libevent applications should be developed as event driven stat
 Better documentation will follow at some point in the future, when I get round to it. Hey, I'm a busy man!
 
 
+## TODO List
+
+- Move the connection map from the manager to the respective thread handlers. Each thread closes its own connections anyway, so this would reduce the size of the map that stores them and increased lookup speed and reduce mutex contension.
+
