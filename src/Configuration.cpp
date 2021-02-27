@@ -63,6 +63,16 @@ namespace Stewardess
   }
 
 
+  void Configuration::setMinTickTime( unsigned int m )
+  {
+    if ( m < 1 )
+    {
+      throw Exception( "Minimum tick time cannot be less than 1s" );
+    }
+    _data.minTickTime = m;
+  }
+
+
   void Configuration::setDeathTime( unsigned int time )
   {
     _data.deathTime.tv_sec = time;

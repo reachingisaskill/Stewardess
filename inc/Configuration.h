@@ -76,6 +76,9 @@ namespace Stewardess
       // Set the modifier factor for the internal tick time
       void setTickTimeModifier( float );
 
+      // Set the modifier factor for the internal tick time
+      void setMinTickTime( unsigned int );
+
       // Set the time before the connections are forcibly closed once shutdown has been called.
       void setDeathTime( unsigned int );
 
