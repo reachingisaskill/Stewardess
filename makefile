@@ -58,6 +58,10 @@ DEFINES =
 INSTALL_DIR =
 
 
+# Local Deployment Directory
+DEPLOY_DIR = deploy
+
+
 # The Compiler
 CCC = g++ -g  -Wall -Wextra -pedantic ${DEFINES}
 # CCC = g++ -O2 -Wall -Wextra -pedantic ${DEFINES} # Optimized Compilation
@@ -75,6 +79,9 @@ LIB_LINK_FLAGS = -Wl,-rpath=$(realpath ${LIB_DIR}) -l${LIB_NAME} -L${LIB_DIR}
 EXE_FILES = ${shell ls $(EXE_SRC_DIR)}
 SRC_FILES = ${shell ls $(SRC_DIR)}
 INC_FILES = ${shell ls $(INC_DIR)}
+
+# The headers to include when we install
+INSTALL_HEADERS = ${INC_DIR}/Stewardess.h
 
 # Executable Source Files
 EXE_SRC = $(filter %.cxx,${EXE_FILES})
@@ -95,7 +102,7 @@ PROGNAMES = $(notdir ${PROGRAMS})
 
 
 
-.PHONY : program all _all build install clean buildall directories includes intro single_intro check_install
+.PHONY : program all _all build install clean buildall directories includes intro single_intro check_install deploy
 
 
 
@@ -187,13 +194,14 @@ purge :	directories
 		fi
 
 
-install : check_install
+install : ${LIBRARY} check_install
 	@echo
 	@echo "Installing Program/Libraries"
-	@cp ${INCLUDE} ${INSTALL_DIR}/include
-	@cp ${PROGRAMS} ${INSTALL_DIR}/bin
+	@cp ${INSTALL_HEADERS} ${INSTALL_DIR}/include
+#@cp ${PROGRAMS} ${INSTALL_DIR}/bin
 	@cp ${LIBRARY} ${INSTALL_DIR}/lib
 	@echo
+
 
 check_install :
 	@if [ -z "${INSTALL_DIR}" ]; then          \
@@ -202,4 +210,15 @@ check_install :
 		echo                                    ;\
 		exit 1                                  ;\
 		fi
+
+
+deploy : ${LIBRARY}
+	@echo
+	@echo "Deploying to local directory: " ${DEPLOY_DIR}
+	mkdir -p ./${DEPLOY_DIR}/include
+	mkdir -p ./${DEPLOY_DIR}/lib
+	cp ${INSTALL_HEADERS} ./${DEPLOY_DIR}/include
+	cp ${LIBRARY} ./${DEPLOY_DIR}/lib
+#@cp ${PROGRAMS} ./${INSTALL_DIR}/bin
+	@echo
 
