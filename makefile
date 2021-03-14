@@ -222,11 +222,15 @@ check_install :
 deploy : ${LIBRARY}
 	@echo
 	@echo "Deploying to local directory: " ${DEPLOY_DIR}
-	@mkdir -p ${DEPLOY_DIR}/include
-	@mkdir -p ${DEPLOY_DIR}/include/${LIB_NAME}
+	@if [ -n "${INS_TOP_FILES}" ]; then                   \
+	  mkdir -p ${DEPLOY_DIR}/include                    ;\
+	  cp ${INS_TOP_FILES} ${DEPLOY_DIR}/include         ;\
+	fi
+	@if [ -n "${INS_FILES}" ]; then                       \
+	  mkdir -p ${DEPLOY_DIR}/include/${LIB_NAME}        ;\
+	  cp ${INS_FILES} ${DEPLOY_DIR}/include/${LIB_NAME} ;\
+	fi
 	@mkdir -p ${DEPLOY_DIR}/lib
-	@cp ${INS_FILES} ${DEPLOY_DIR}/include/${LIB_NAME}
-	@cp ${INS_TOP_FILES} ${DEPLOY_DIR}/include
 	@cp ${LIBRARY} ${DEPLOY_DIR}/lib
 #@cp ${PROGRAMS} ${INSTALL_DIR}/bin
 	@echo

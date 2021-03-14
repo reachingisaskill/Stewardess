@@ -48,6 +48,9 @@ namespace Stewardess
 
   Manager::~Manager()
   {
+    // Delete the implementation class
+    delete _impl;
+
     std::lock_guard<std::mutex> lock( _instanceCountMutex );
     if ( (--_instanceCount) == 0 )
     {
