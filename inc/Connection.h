@@ -4,7 +4,7 @@
 
 #include "Definitions.h"
 #include "LibeventIncludes.h"
-#include "Manager.h"
+#include "ManagerImpl.h"
 #include "Handle.h"
 
 #include <string>
@@ -51,7 +51,7 @@ namespace Stewardess
     public:
 
       // Create a new connection and aquire a new id.
-      Connection( sockaddr, Manager&, event_base*, evutil_socket_t );
+      Connection( sockaddr, ManagerImpl&, event_base*, evutil_socket_t );
       
       // Destroy buffer event
       ~Connection();
@@ -66,8 +66,8 @@ namespace Stewardess
       // Addres of the client bound to the socket
       const sockaddr socketAddress;
 
-      // Manager reference
-      Manager& manager;
+      // ManagerImpl reference
+      ManagerImpl& manager;
 
       // Message builder
       Serializer* const serializer;

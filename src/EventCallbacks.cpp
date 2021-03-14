@@ -1,7 +1,7 @@
 
 #include "EventCallbacks.h"
 #include "CallbackInterface.h"
-#include "Manager.h"
+#include "ManagerImpl.h"
 #include "WorkerThread.h"
 #include "Handle.h"
 #include "Connection.h"
@@ -21,7 +21,7 @@ namespace Stewardess
 
   void listenerAcceptCB( evconnlistener* /*listener*/, evutil_socket_t new_socket, sockaddr* address, int /*address_length*/, void* arg )
   {
-    Manager* data = (Manager*)arg;
+    ManagerImpl* data = (ManagerImpl*)arg;
     DEBUG_LOG( "Stewardess::Listener", "New connection found" );
 
     // Make the socket non-blocking - this happens by default when using a listener
@@ -29,7 +29,7 @@ namespace Stewardess
 
     event_base* worker_base;
     // Choose a worker to handle it
-    if ( data->singleThreadMode() )
+    if ( data->_threads.size() == 0 )
     {
       worker_base = data->_eventBase;
     }
@@ -52,7 +52,7 @@ namespace Stewardess
 
   void listenerErrorCB( evconnlistener* /*listener*/, void* arg )
   {
-    Manager* data = (Manager*)arg;
+    ManagerImpl* data = (ManagerImpl*)arg;
 
     int err = EVUTIL_SOCKET_ERROR();
     ERROR_STREAM( "Stewardess::Listener" ) << "An error occured with the libevent listener: " << evutil_socket_error_to_string( err );
@@ -66,17 +66,17 @@ namespace Stewardess
 
   void interruptSignalCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   {
-    Manager* data = (Manager*)arg;
+    ManagerImpl* data = (ManagerImpl*)arg;
     INFO_LOG( "Stewardess::SignalHandler", "Interrupt sisgnal received." );
 
-    // Manager handles the rest.
+    // ManagerImpl handles the rest.
     data->shutdown();
   }
 
 
   void killTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   {
-    Manager* data = (Manager*)arg;
+    ManagerImpl* data = (ManagerImpl*)arg;
     INFO_LOG( "Stewardess::SignalHandler", "Shutdown timer expired." );
 
     // Hard stopping of everything
@@ -86,7 +86,7 @@ namespace Stewardess
 
   void tickTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
   {
-    Manager* data = (Manager*)arg;
+    ManagerImpl* data = (ManagerImpl*)arg;
 
 //    // If the closed connections have no handles, delete them
 //    data->cleanupClosedConnections();

@@ -44,7 +44,7 @@ namespace Stewardess
 
   // Unique identifier types
   typedef std::intptr_t ConnectionID;
-  typedef long long int UniqueID;
+  typedef int64_t UniqueID;
 
   // Common arry-like structures
   typedef std::map< ConnectionID, Connection* > ConnectionMap;

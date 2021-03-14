@@ -41,6 +41,12 @@ TMP_DIR = .temp
 EXE_SRC_DIR = exec
 
 
+# The headers to include when we install
+# Top level headers
+INSTALL_TOP_HEADERS = Stewardess.h
+INSTALL_HEADERS = Definitions.h CallbackInterface.h Manager.h Configuration.h Handle.h Payload.h Serializer.h Buffer.h Exception.h
+
+
 # Library Name
 LIB_NAME = Stewardess
 
@@ -80,11 +86,12 @@ EXE_FILES = ${shell ls $(EXE_SRC_DIR)}
 SRC_FILES = ${shell ls $(SRC_DIR)}
 INC_FILES = ${shell ls $(INC_DIR)}
 
-# The headers to include when we install
-INSTALL_HEADERS = ${INC_DIR}/Stewardess.h
-
 # Executable Source Files
 EXE_SRC = $(filter %.cxx,${EXE_FILES})
+
+# Intallation headers
+INS_FILES = $(patsubst %.h,${INC_DIR}/%.h,$(filter %.h,$(INSTALL_HEADERS)))
+INS_TOP_FILES = $(patsubst %.h,${INC_DIR}/%.h,$(filter %.h,$(INSTALL_TOP_HEADERS)))
 
 
 
@@ -215,10 +222,12 @@ check_install :
 deploy : ${LIBRARY}
 	@echo
 	@echo "Deploying to local directory: " ${DEPLOY_DIR}
-	mkdir -p ./${DEPLOY_DIR}/include
-	mkdir -p ./${DEPLOY_DIR}/lib
-	cp ${INSTALL_HEADERS} ./${DEPLOY_DIR}/include
-	cp ${LIBRARY} ./${DEPLOY_DIR}/lib
-#@cp ${PROGRAMS} ./${INSTALL_DIR}/bin
+	@mkdir -p ${DEPLOY_DIR}/include
+	@mkdir -p ${DEPLOY_DIR}/include/${LIB_NAME}
+	@mkdir -p ${DEPLOY_DIR}/lib
+	@cp ${INS_FILES} ${DEPLOY_DIR}/include/${LIB_NAME}
+	@cp ${INS_TOP_FILES} ${DEPLOY_DIR}/include
+	@cp ${LIBRARY} ${DEPLOY_DIR}/lib
+#@cp ${PROGRAMS} ${INSTALL_DIR}/bin
 	@echo
 
