@@ -57,7 +57,7 @@ namespace Stewardess
 
 
     // Join all the worker threads.
-    INFO_LOG( "Stewardess::ManagerImpl", "Joining worker threads" );
+    INFO_LOG( "Stewardess::Manager", "Joining worker threads" );
     for ( ThreadVector::iterator it = _threads.begin(); it != _threads.end(); ++it )
     {
       (*it)->theThread.join();
@@ -116,7 +116,7 @@ namespace Stewardess
     try
     {
       // Configure the event base for the control thread
-      INFO_LOG( "Stewardess::ManagerImpl", "Configuring network logic." );
+      INFO_LOG( "Stewardess::Manager", "Configuring network logic." );
       _eventBase = event_base_new();
       if ( _eventBase == nullptr )
       {
@@ -157,7 +157,7 @@ namespace Stewardess
       // Build a listener if wanted
       if ( _configuration.requestListener )
       {
-        INFO_STREAM( "Stewardess::ManagerImpl" ) << "Configuring listener on port " << _configuration.portNumber;
+        INFO_STREAM( "Stewardess::Manager" ) << "Configuring listener on port " << _configuration.portNumber;
         _listener = evconnlistener_new_bind( _eventBase, listenerAcceptCB, (void*)this,
                                              LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
                                              (sockaddr*)&_socketAddress, sizeof(_socketAddress) );
@@ -170,7 +170,7 @@ namespace Stewardess
 
 
       // Create the worker threads
-      INFO_LOG( "Stewardess::ManagerImpl", "Intialising worker threads." );
+      INFO_LOG( "Stewardess::Manager", "Intialising worker threads." );
       for ( unsigned int i = 0; i < _configuration.numThreads; ++i )
       {
         ThreadInfo* info = new ThreadInfo();
@@ -191,7 +191,7 @@ namespace Stewardess
       _tickTimeStamp = std::chrono::system_clock::now();
 
       // Start the libevent loop using the base event
-      INFO_LOG( "Stewardess::ManagerImpl", "Operation start." );
+      INFO_LOG( "Stewardess::Manager", "Operation start." );
 
       _server.onStart();
       if ( ! _abort )
@@ -200,7 +200,7 @@ namespace Stewardess
       }
       _server.onStop();
 
-      INFO_LOG( "Stewardess::ManagerImpl", "Operation stopped." );
+      INFO_LOG( "Stewardess::Manager", "Operation stopped." );
     }
     catch( const Exception& ex )
     {
@@ -216,7 +216,7 @@ namespace Stewardess
 
   void ManagerImpl::shutdown()
   {
-    INFO_LOG( "Stewardess::ManagerImpl", "Shutdown requested" );
+    INFO_LOG( "Stewardess::Manager", "Shutdown requested" );
 
     // Make the death timer pending
     event_add( _deathEvent, &_configuration.deathTime );
@@ -240,7 +240,7 @@ namespace Stewardess
 
   void ManagerImpl::abort()
   {
-    INFO_LOG( "Stewardess::ManagerImpl", "Aborting" );
+    INFO_LOG( "Stewardess::Manager", "Aborting" );
 
     // Leave a flag for things to check
     _abort = true;
@@ -286,7 +286,7 @@ namespace Stewardess
     int result = evutil_getaddrinfo( host.c_str(), port.c_str(), &address_hints, &address_answer );
     if ( result != 0 )
     {
-      ERROR_STREAM( "Stewardess::ManagerImpl" ) << "Could not resolve hostname: " << host;
+      ERROR_STREAM( "Stewardess::Manager" ) << "Could not resolve hostname: " << host;
       return Handle();
     }
 
@@ -300,12 +300,12 @@ namespace Stewardess
         free( address_answer );
         address_answer = temp;
       }
-      ERROR_LOG( "Stewardess::ManagerImpl", "Failed to create a socket" );
+      ERROR_LOG( "Stewardess::Manager", "Failed to create a socket" );
       return Handle();
     }
 
     // Try to connect to the remote host
-    INFO_STREAM( "Stewardess::ManagerImpl" ) << "Connecting to host: " << host;
+    INFO_STREAM( "Stewardess::Manager" ) << "Connecting to host: " << host;
     if ( connect( new_socket, address_answer->ai_addr, address_answer->ai_addrlen ) )
     {
       EVUTIL_CLOSESOCKET( new_socket );
@@ -315,7 +315,7 @@ namespace Stewardess
         free( address_answer );
         address_answer = temp;
       }
-      ERROR_STREAM( "Stewardess::ManagerImpl" ) << "Failed to connect to server " << host << ":" << port;
+      ERROR_STREAM( "Stewardess::Manager" ) << "Failed to connect to server " << host << ":" << port;
       return Handle();
     }
 
