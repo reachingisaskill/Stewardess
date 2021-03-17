@@ -94,10 +94,9 @@ namespace Stewardess
   }
 
 
-  void Manager::requestConnectTo( std::string /*host*/, std::string /*port*/, UniqueID /*id*/ )
+  void Manager::requestConnectTo( std::string host, std::string port, UniqueID id )
   {
-    // Not yet implemented
-    // _impl->requestConnectTo( host, port, id );
+    _impl->requestConnectTo( host, port, id );
   }
 
 

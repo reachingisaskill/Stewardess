@@ -104,6 +104,101 @@ namespace Stewardess
   }
 
 
+  void connectCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
+  {
+    ManagerImpl* data = (ManagerImpl*)arg;
+
+    ConnectionRequest request;
+    {
+      GuardLock lk( data->_connectionRequestsMutex );
+      if ( data->_connectionRequests.empty() ) return;
+      request = data->_connectionRequests.front();
+      data->_connectionRequests.pop();
+    }
+
+    // Find the server address
+    evutil_addrinfo address_hints;
+    evutil_addrinfo* address_answer = nullptr;
+
+    memset( &address_hints, 0, sizeof( address_hints ) );
+    address_hints.ai_family = AF_UNSPEC;
+    address_hints.ai_socktype = SOCK_STREAM;
+    address_hints.ai_protocol = IPPROTO_TCP;
+    address_hints.ai_flags = EVUTIL_AI_ADDRCONFIG;
+
+
+    // Resolve the hostname
+    int result = evutil_getaddrinfo( request.address.c_str(), request.port.c_str(), &address_hints, &address_answer );
+    if ( result != 0 )
+    {
+      ERROR_STREAM( "Stewardess::Manager" ) << "Could not resolve hostname: " << request.address;
+      return;
+    }
+
+    // Request a socket
+    evutil_socket_t new_socket = socket( address_answer->ai_family, address_answer->ai_socktype, address_answer->ai_protocol );
+    if ( new_socket < 0 )
+    {
+      while( address_answer != nullptr )
+      {
+        evutil_addrinfo* temp = address_answer->ai_next;
+        free( address_answer );
+        address_answer = temp;
+      }
+      ERROR_LOG( "Stewardess::Manager", "Failed to create a socket" );
+      return;
+    }
+
+    // Try to connect to the remote host
+    INFO_STREAM( "Stewardess::Manager" ) << "Connecting to host: " << request.address;
+    if ( connect( new_socket, address_answer->ai_addr, address_answer->ai_addrlen ) )
+    {
+      EVUTIL_CLOSESOCKET( new_socket );
+      while( address_answer != nullptr )
+      {
+        evutil_addrinfo* temp = address_answer->ai_next;
+        free( address_answer );
+        address_answer = temp;
+      }
+      ERROR_STREAM( "Stewardess::Manager" ) << "Failed to connect to server " << request.address << ":" << request.port;
+      return;
+    }
+
+    // Make the socket non-blocking
+    evutil_make_socket_nonblocking( new_socket );
+
+    event_base* worker_base;
+    if ( data->_threads.size() == 0 )
+    {
+      worker_base = data->_eventBase;
+    }
+    else
+    {
+      worker_base = data->_threads[ data->getNextThread() ]->data.eventBase;
+    }
+
+    // Create the connection 
+    Connection* connection = new Connection( *address_answer->ai_addr, *data, worker_base, new_socket );
+    connection->setIdentifier( request.uniqueId );
+    connection->bufferSize =  data->_configuration.bufferSize;
+
+
+    // Clear the address memory
+    while( address_answer != nullptr )
+    {
+      evutil_addrinfo* temp = address_answer->ai_next;
+      free( address_answer );
+      address_answer = temp;
+    }
+
+    // Add the new connection to the manager
+    data->addConnection( connection );
+
+    // Signal that something has connected
+    data->_server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
+  }
+
+
   ////////////////////////////////////////////////////////////////////////////////
   // Read/write event callback functions
 

@@ -8,9 +8,6 @@
 namespace Stewardess
 {
 
-  const timeval immediately = { 0, 0 };
-
-
   Connection::Connection( sockaddr address, ManagerImpl& manager, event_base* worker_base, evutil_socket_t new_socket ) :
     _references( 0 ),
     _identifier( 0 ),

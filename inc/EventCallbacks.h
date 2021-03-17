@@ -23,6 +23,7 @@ namespace Stewardess
   void interruptSignalCB( evutil_socket_t, short, void* );
   void killTimerCB( evutil_socket_t, short, void* );
   void tickTimerCB( evutil_socket_t, short, void* );
+  void connectCB( evutil_socket_t, short, void* );
 
 
   ////////////////////////////////////////////////////////////////////////////////

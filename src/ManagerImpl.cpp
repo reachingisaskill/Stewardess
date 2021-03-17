@@ -24,6 +24,7 @@ namespace Stewardess
     _connections(),
     _eventBase( nullptr ),
     _listener( nullptr ),
+    _connectorEvent( nullptr ),
     _signalEvent( nullptr ),
     _tickEvent( nullptr ),
     _deathEvent( nullptr ),
@@ -68,6 +69,10 @@ namespace Stewardess
     if ( _deathEvent )
     {
       event_free( _deathEvent );
+    }
+    if ( _connectorEvent )
+    {
+      event_free( _connectorEvent );
     }
     if ( _tickEvent )
     {
@@ -131,6 +136,15 @@ namespace Stewardess
         throw Exception( "Could not create the death event." );
       }
       // event_add( _deathEvent, &_deathTime );
+
+
+      // Create a connector timer event
+      _connectorEvent = evtimer_new( _eventBase, connectCB, (void*)this );
+      if ( _connectorEvent == nullptr )
+      {
+        throw Exception( "Could not create the connector event." );
+      }
+      // event_add( _connectorEvent, &immediately );
 
 
       // Create a tick event
@@ -350,11 +364,27 @@ namespace Stewardess
     // Add the new connection to the manager
     this->addConnection( connection );
 
-    // Signal that something has connected
-    _server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
+    // We don't call this function as this is not executed asynchronously - the user knows immediately
+//    // Signal that something has connected
+//    _server.onConnectionEvent( connection->requestHandle(), ConnectionEvent::Connect );
 
     // Return the handle
     return connection->requestHandle();
+  }
+
+
+
+  void ManagerImpl::requestConnectTo( std::string address, std::string port, UniqueID uid )
+  {
+    // Create the request
+    ConnectionRequest request = { address, port, uid };
+
+    // Push it to the vector
+    GuardLock lk( _connectionRequestsMutex );
+    _connectionRequests.push( request );
+
+    // Make sure the event is pending
+    event_add( _connectorEvent, &immediately );
   }
 
 

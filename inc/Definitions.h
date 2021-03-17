@@ -23,6 +23,8 @@ namespace Stewardess
 
   // The default time for the internal tick rate of the server
   const timeval defaultTickTime = { 2, 0 };
+  // Start an timer event immediately with this timer
+  const timeval immediately = { 0, 0 };
 
 
   // Forward declare some classes

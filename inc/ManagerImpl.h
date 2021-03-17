@@ -6,6 +6,9 @@
 #include "LibeventIncludes.h"
 #include "Configuration.h"
 #include "Handle.h"
+#include "ConnectionRequest.h"
+
+#include <queue>
 
 
 namespace Stewardess
@@ -27,6 +30,7 @@ namespace Stewardess
     friend void interruptSignalCB( evutil_socket_t, short, void* );
     friend void killTimerCB( evutil_socket_t, short, void* );
     friend void tickTimerCB( evutil_socket_t, short, void* );
+    friend void connectCB( evutil_socket_t, short, void* );
     friend void readCB( evutil_socket_t, short, void* );
     friend void writeCB( evutil_socket_t, short, void* );
     friend void destroyCB( evutil_socket_t, short, void* );
@@ -49,11 +53,19 @@ namespace Stewardess
       mutable std::mutex _connectionsMutex;
 
 
+      // Vector of pending asynchronous connections
+      std::queue< ConnectionRequest > _connectionRequests;
+      mutable std::mutex _connectionRequestsMutex;
+
+
       // Control event base runs listener, signal handling and server ticks runs listener, signal handling and server ticks
       event_base* _eventBase;
 
       // Pointer to a listener event
       evconnlistener* _listener;
+
+      // Pointer to the connector event
+      event* _connectorEvent;
 
       // Pointer to the signal event
       event* _signalEvent;

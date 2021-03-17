@@ -16,15 +16,16 @@ namespace Stewardess
 
   void TestClient::onStart()
   {
-    _handle = manager().connectTo( "0.0.0.0", "7007" );
-    if ( ! _handle )
-    {
-      manager().abort();
-    }
-    else
-    {
-      _alive = true;
-    }
+//    _handle = manager().connectTo( "0.0.0.0", "7007" );
+//    if ( ! _handle )
+//    {
+//      manager().abort();
+//    }
+//    else
+//    {
+//    }
+    manager().requestConnectTo( "0.0.0.0", "7007", 0 );
+    _alive = true;
   }
 
 
@@ -47,6 +48,7 @@ namespace Stewardess
     {
       case ConnectionEvent::Connect :
       {
+        _handle = connection;
         std::cout << "Connection Event" << std::endl;
 
         TestPayload p( "Hello" );
@@ -80,7 +82,7 @@ namespace Stewardess
 
   void TestClient::onTick( Milliseconds time )
   {
-    if ( _alive )
+    if ( _alive && _handle )
     {
       std::cout << std::endl;
       _tickCounter += time.count();
