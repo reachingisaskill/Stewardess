@@ -96,6 +96,7 @@ namespace Stewardess
 
   void Manager::requestConnectTo( std::string host, std::string port, UniqueID id )
   {
+    DEBUG_STREAM( "Manager::RequestConnection" ) << "Requesting connection to : " << host << " : " << port << ". ID = " << id;
     _impl->requestConnectTo( host, port, id );
   }
 
@@ -127,6 +128,24 @@ namespace Stewardess
   Handle Manager::connectTo( std::string host, std::string port, UniqueID id )
   {
     return _impl->connectTo( host, port, id );
+  }
+
+
+  void Manager::createTimer( UniqueID uid, bool repeat )
+  {
+    _impl->createTimer( uid, repeat );
+  }
+
+
+  void Manager::startTimerClock( UniqueID uid, TimeStamp ts )
+  {
+    _impl->startTimerClock( uid, ts );
+  }
+
+
+  void Manager::startTimerCountdown( UniqueID uid, Milliseconds ms )
+  {
+    _impl->startTimerCountdown( uid, ms );
   }
 
 }

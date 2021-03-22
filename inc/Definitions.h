@@ -9,6 +9,7 @@
 #include <queue>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <iostream>
 
@@ -32,6 +33,7 @@ namespace Stewardess
   class Payload;
   class Buffer;
   class ThreadInfo;
+  class TimerData;
 
 
   // Serialization structures
@@ -51,6 +53,7 @@ namespace Stewardess
   // Common arry-like structures
   typedef std::map< ConnectionID, Connection* > ConnectionMap;
   typedef std::vector< ThreadInfo* > ThreadVector;
+  typedef std::unordered_map< UniqueID, TimerData* > TimerMap;
 
   // Short hands for mutex locks
   typedef std::unique_lock<std::mutex> UniqueLock;
@@ -62,7 +65,20 @@ namespace Stewardess
 
   enum class ConnectionEvent { Connect, Disconnect, DisconnectError, Timeout, SerializationError };
 
-  enum class ServerEvent { Shutdown, ListenerError };
+  enum class ServerEvent { Shutdown, ListenerError, RequestConnectFail };
+
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // Useful template functions
+  template< typename DURATION >
+  timeval convertToTimeval( DURATION duration )
+  {
+    auto seconds = std::chrono::duration_cast< std::chrono::seconds >( duration );
+    auto micros = std::chrono::duration_cast< std::chrono::microseconds >( duration-seconds );
+
+    return { (time_t)seconds.count(), (long int)micros.count() };
+  }
+
 }
 
 #endif // STEWARDESS_DEFINITIONS_H_

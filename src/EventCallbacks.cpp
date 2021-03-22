@@ -2,6 +2,7 @@
 #include "EventCallbacks.h"
 #include "CallbackInterface.h"
 #include "ManagerImpl.h"
+#include "TimerData.h"
 #include "WorkerThread.h"
 #include "Handle.h"
 #include "Connection.h"
@@ -88,9 +89,6 @@ namespace Stewardess
   {
     ManagerImpl* data = (ManagerImpl*)arg;
 
-//    // If the closed connections have no handles, delete them
-//    data->cleanupClosedConnections();
-
     // Update the tick time stamp
     TimeStamp new_stamp = std::chrono::system_clock::now();
     auto duration = new_stamp - data->_tickTimeStamp;
@@ -101,6 +99,19 @@ namespace Stewardess
 
     // Set the timeout time to the log of the number of connections
     event_add( data->_tickEvent, data->getTickTime() );
+  }
+
+
+  void userTimerCB( evutil_socket_t /*socket*/, short /*what*/, void* arg )
+  {
+    TimerData* timer = (TimerData*)arg;
+
+    timer->manager->_server.onTimer( timer->timerID );
+
+    if ( timer->repeat )
+    {
+      event_add( timer->theEvent, &timer->time );
+    }
   }
 
 
@@ -132,6 +143,7 @@ namespace Stewardess
     if ( result != 0 )
     {
       ERROR_STREAM( "Stewardess::Manager" ) << "Could not resolve hostname: " << request.address;
+      data->_server.onEvent( ServerEvent::RequestConnectFail, "Could not resolve hostname" );
       return;
     }
 
@@ -146,6 +158,7 @@ namespace Stewardess
         address_answer = temp;
       }
       ERROR_LOG( "Stewardess::Manager", "Failed to create a socket" );
+      data->_server.onEvent( ServerEvent::RequestConnectFail, "Could not create socket" );
       return;
     }
 
@@ -161,6 +174,7 @@ namespace Stewardess
         address_answer = temp;
       }
       ERROR_STREAM( "Stewardess::Manager" ) << "Failed to connect to server " << request.address << ":" << request.port;
+      data->_server.onEvent( ServerEvent::RequestConnectFail, "Failed to connect to server" );
       return;
     }
 
@@ -182,6 +196,7 @@ namespace Stewardess
     connection->setIdentifier( request.uniqueId );
     connection->bufferSize =  data->_configuration.bufferSize;
 
+    DEBUG_STREAM( "Stewardess::RequestConnection" ) << "Connected to " << request.address << " : " << request.port.c_str();
 
     // Clear the address memory
     while( address_answer != nullptr )

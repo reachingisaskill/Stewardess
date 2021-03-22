@@ -63,6 +63,10 @@ namespace Stewardess
       // Called on every server 'tick'
       virtual void onTick( Milliseconds ) {}
 
+
+      // Called when a user timer expires
+      virtual void onTimer( UniqueID ) {}
+
   };
 
 }

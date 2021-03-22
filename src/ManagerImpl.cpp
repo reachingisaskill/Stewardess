@@ -4,6 +4,7 @@
 #include "EventCallbacks.h"
 #include "WorkerThread.h"
 #include "Connection.h"
+#include "TimerData.h"
 #include "Exception.h"
 
 #include <signal.h>
@@ -22,6 +23,7 @@ namespace Stewardess
     _server( server ),
     _abort( false ),
     _connections(),
+    _userTimers(),
     _eventBase( nullptr ),
     _listener( nullptr ),
     _connectorEvent( nullptr ),
@@ -65,6 +67,17 @@ namespace Stewardess
       event_base_free( (*it)->data.eventBase );
       delete (*it);
     }
+    _threads.clear();
+
+
+    // Clear all the user timers
+    for ( TimerMap::iterator it = _userTimers.begin(); it != _userTimers.end(); ++it )
+    {
+      event_free( it->second->theEvent );
+      delete it->second;
+    }
+    _userTimers.clear();
+
 
     if ( _deathEvent )
     {
@@ -474,6 +487,72 @@ namespace Stewardess
     {
       WARN_STREAM( "ManagerImpl::CloseConnection" ) << "Connection requested closing before initialised: " << connection->getConnectionID();
     }
+  }
+
+
+  void ManagerImpl::createTimer( UniqueID uid, bool repeat )
+  {
+    TimerData* timer = new TimerData( { this, uid, nullptr, repeat, {0, 0} } );
+
+    timer->theEvent = evtimer_new( _eventBase, userTimerCB, (void*)timer );
+    if ( timer->theEvent == nullptr )
+    {
+      throw Exception( "Could not create user timer event." );
+    }
+
+    GuardLock lk( _userTimersMutex );
+    TimerMap::iterator found = _userTimers.find( uid );
+    if ( found != _userTimers.end() )
+    {
+      throw Exception( "Cannot create a timer using an exist ID." );
+    }
+
+    _userTimers.insert( std::make_pair( uid, timer ) );
+  }
+
+
+  void ManagerImpl::startTimerClock( UniqueID uid, TimeStamp timestamp )
+  {
+    auto now = std::chrono::system_clock::now();
+    if ( timestamp < now )
+    {
+      WARN_STREAM( "Manager::StartTimer" ) << "Cannot start timer for a negative amount of time. ID: " << uid;
+    }
+
+    GuardLock lk( _userTimersMutex );
+
+    TimerMap::iterator found = _userTimers.find( uid );
+    if ( found == _userTimers.end() )
+    {
+      WARN_STREAM( "Manager::StartTimer" ) << "Cannot start timer of unknown ID: " << uid;
+      return;
+    }
+
+    found->second->time = convertToTimeval( timestamp - now );
+
+    event_add( found->second->theEvent, &found->second->time );
+  }
+
+
+  void ManagerImpl::startTimerCountdown( UniqueID uid, Milliseconds countdown )
+  {
+    if ( countdown.count() < 0 )
+    {
+      WARN_STREAM( "Manager::StartTimer" ) << "Cannot start timer for a negative amount of time. ID: " << uid;
+    }
+
+    GuardLock lk( _userTimersMutex );
+
+    TimerMap::iterator found = _userTimers.find( uid );
+    if ( found == _userTimers.end() )
+    {
+      WARN_STREAM( "Manager::StartTimer" ) << "Cannot start timer of unknown ID: " << uid;
+      return;
+    }
+
+    found->second->time = convertToTimeval( countdown );
+
+    event_add( found->second->theEvent, &found->second->time );
   }
 
 }

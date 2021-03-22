@@ -24,8 +24,11 @@ namespace Stewardess
 //    else
 //    {
 //    }
-    manager().requestConnectTo( "0.0.0.0", "7007", 0 );
+    manager().requestConnectTo( "0.0.0.0", "7127", 0 );
     _alive = true;
+
+    manager().createTimer( 12, true );
+    manager().startTimerCountdown( 12, Milliseconds(3700) );
   }
 
 
@@ -97,5 +100,10 @@ namespace Stewardess
     }
   }
 
+
+  void TestClient::onTimer( UniqueID timerID )
+  {
+    std::cout << "OnTime called: " << timerID << std::endl;
+  }
 }
 

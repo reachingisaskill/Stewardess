@@ -70,6 +70,16 @@ namespace Stewardess
       size_t getNumberConnections() const;
 
 
+      // Creates a timer for the user to use
+      void createTimer( UniqueID, bool );
+
+      // Starts the countdown of a timer
+      void startTimerClock( UniqueID, TimeStamp );
+
+      // Starts the countdown of a timer
+      void startTimerCountdown( UniqueID, Milliseconds );
+
+
       // Runs the server instance
       void run();
 

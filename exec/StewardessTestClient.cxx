@@ -1,5 +1,5 @@
 
-#define PORT_NUMBER 7007
+#define PORT_NUMBER 7127
 #define HOST_ADDRESS "0.0.0.0"
 
 #include "logtastic.h"

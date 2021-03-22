@@ -50,6 +50,10 @@ namespace Stewardess
 
       // Called every server 'tick' with the elapsed time
       virtual void onTick( Milliseconds ) override;
+
+
+      // Called on the user timers
+      virtual void onTimer( UniqueID ) override;
   };
 
 }

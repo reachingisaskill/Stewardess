@@ -30,11 +30,11 @@ namespace Stewardess
     friend void interruptSignalCB( evutil_socket_t, short, void* );
     friend void killTimerCB( evutil_socket_t, short, void* );
     friend void tickTimerCB( evutil_socket_t, short, void* );
+    friend void userTimerCB( evutil_socket_t, short, void* );
     friend void connectCB( evutil_socket_t, short, void* );
     friend void readCB( evutil_socket_t, short, void* );
     friend void writeCB( evutil_socket_t, short, void* );
     friend void destroyCB( evutil_socket_t, short, void* );
-
 
     private:
 
@@ -56,6 +56,11 @@ namespace Stewardess
       // Vector of pending asynchronous connections
       std::queue< ConnectionRequest > _connectionRequests;
       mutable std::mutex _connectionRequestsMutex;
+
+
+      // Vector of all the user timers
+      TimerMap _userTimers;
+      mutable std::mutex _userTimersMutex;
 
 
       // Control event base runs listener, signal handling and server ticks runs listener, signal handling and server ticks
@@ -155,6 +160,17 @@ namespace Stewardess
 
       // Returns the number of current active connections
       size_t getNumberConnections() const;
+
+
+
+      // Creates a timer for the user to use
+      void createTimer( UniqueID, bool );
+
+      // Starts the countdown of a timer
+      void startTimerClock( UniqueID, TimeStamp );
+
+      // Starts the countdown of a timer
+      void startTimerCountdown( UniqueID, Milliseconds );
 
 
       // Runs the server instance
