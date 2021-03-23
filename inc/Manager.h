@@ -36,6 +36,11 @@ namespace Stewardess
       Manager& operator=( Manager&& ) = delete;
 
 
+      // Return a reference to the callback interface
+      CallbackInterface& server();
+      const CallbackInterface& server() const;
+
+
       // Return the port that we are listening on
       int getPortNumber() const;
 
@@ -46,6 +51,7 @@ namespace Stewardess
 
       // Returns true if everything is to run on the primary thread
       bool singleThreadMode() const;
+
 
 
       // Return the timestamp of the last server tick

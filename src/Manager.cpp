@@ -59,6 +59,18 @@ namespace Stewardess
   }
 
 
+  CallbackInterface& Manager::server()
+  {
+    return _impl->_server;
+  }
+
+
+  const CallbackInterface& Manager::server() const
+  {
+    return _impl->_server;
+  }
+
+
   int Manager::getPortNumber() const
   {
     return _impl->getPortNumber();
