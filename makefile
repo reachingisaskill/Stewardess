@@ -44,7 +44,7 @@ EXE_SRC_DIR = exec
 # The headers to include when we install
 # Top level headers
 INSTALL_TOP_HEADERS = Stewardess.h
-INSTALL_HEADERS = Definitions.h CallbackInterface.h Manager.h Configuration.h Handle.h Payload.h Serializer.h Buffer.h Exception.h
+INSTALL_HEADERS = Definitions.h CallbackInterface.h Manager.h Configuration.h Handle.h Payload.h Serializer.h Buffer.h Exception.h InetAddress.h
 
 
 # Library Name

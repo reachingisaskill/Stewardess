@@ -5,6 +5,7 @@
 #include "Definitions.h"
 #include "LibeventIncludes.h"
 #include "ManagerImpl.h"
+#include "InetAddress.h"
 #include "Handle.h"
 
 #include <string>
@@ -64,7 +65,7 @@ namespace Stewardess
 
 
       // Addres of the client bound to the socket
-      const sockaddr socketAddress;
+      const InetAddress socketAddress;
 
       // ManagerImpl reference
       ManagerImpl& manager;

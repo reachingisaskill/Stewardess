@@ -1,6 +1,7 @@
 
 #include "Handle.h"
 #include "Connection.h"
+#include "InetAddress.h"
 #include "Payload.h"
 #include "Serializer.h"
 
@@ -87,34 +88,21 @@ namespace Stewardess
   }
 
 
-  std::string Handle::getIPAddress() const
+  const InetAddress& Handle::getIPAddress() const
   {
-    if ( _connection->socketAddress.sa_family == AF_INET )
-    {
-      sockaddr_in* address_pointer = (sockaddr_in*)&_connection->socketAddress;
-      // 40 Allows for IPv6 + \0
-      char address_string[40];
-      evutil_inet_ntop( address_pointer->sin_family, &address_pointer->sin_addr, address_string, 40 );
-      return std::string( address_string );
-    }
-    else
-    {
-      return std::string( "" );
-    }
-  }
-
-
-  int Handle::getPortNumber() const
-  {
-    if ( _connection->socketAddress.sa_family == AF_INET )
-    {
-      sockaddr_in* address_pointer = (sockaddr_in*)&_connection->socketAddress;
-      return address_pointer->sin_port;
-    }
-    else
-    {
-      return 0;
-    }
+    return _connection->socketAddress;
+//    if ( _connection->socketAddress.sa_family == AF_INET )
+//    {
+//      sockaddr_in* address_pointer = (sockaddr_in*)&_connection->socketAddress;
+//      // 40 Allows for IPv6 + \0
+//      char address_string[40];
+//      evutil_inet_ntop( address_pointer->sin_family, &address_pointer->sin_addr, address_string, 40 );
+//      return std::string( address_string );
+//    }
+//    else
+//    {
+//      return std::string( "" );
+//    }
   }
 
 

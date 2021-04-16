@@ -53,6 +53,7 @@ namespace Stewardess
       {
         _handle = connection;
         std::cout << "Connection Event" << std::endl;
+        std::cout << "Successfully connected to : " << _handle.getIPAddress().getStringFull() << std::endl;
 
         TestPayload p( "Hello" );
         connection.write( &p );

@@ -18,7 +18,7 @@ namespace Stewardess
     _destroyEvent( nullptr ),
     _connectionTime( std::chrono::system_clock::now() ),
     _lastAccess( _connectionTime ),
-    socketAddress( address ),
+    socketAddress( &address ),
     manager( manager ),
     serializer( manager._server.buildSerializer() ),
     bufferSize( 4096 )

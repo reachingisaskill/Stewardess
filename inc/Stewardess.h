@@ -8,6 +8,7 @@
 #include "Stewardess/Configuration.h"
 #include "Stewardess/Handle.h"
 #include "Stewardess/Payload.h"
+#include "Stewardess/InetAddress.h"
 #include "Stewardess/Serializer.h"
 #include "Stewardess/Buffer.h"
 #include "Stewardess/Exception.h"

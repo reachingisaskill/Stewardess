@@ -10,6 +10,7 @@ namespace Stewardess
     
   class Connection;
   class Payload;
+  class InetAddress;
 
 
   /*
@@ -52,11 +53,7 @@ namespace Stewardess
 
 
       // Return the address
-      std::string getIPAddress() const;
-
-
-      // Return the port number
-      int getPortNumber() const;
+      const InetAddress& getIPAddress() const;
 
 
       // Returns true if the connection is still alive

@@ -16,25 +16,28 @@ namespace Stewardess
   }
 
 
-  void TestServer::onConnectionEvent( Handle /*handle*/, ConnectionEvent event, const char* error )
+  void TestServer::onConnectionEvent( Handle handle, ConnectionEvent event, const char* error )
   {
     switch( event )
     {
       case ConnectionEvent::Connect :
       {
         std::cout << "Connection Event" << std::endl;
+        std::cout << "IP Address : " << handle.getIPAddress().getStringFull() << std::endl;
       }
       break;
 
       case ConnectionEvent::Disconnect :
       {
         std::cout << "Disconnection Event" << std::endl;
+        std::cout << "IP Address : " << handle.getIPAddress().getString() << std::endl;
       }
       break;
 
       case ConnectionEvent::DisconnectError :
       {
         std::cout << "Unexpected Disconnection Event: " << error << std::endl;
+        std::cout << "IP Address : " << handle.getIPAddress().getStringFull() << std::endl;
       }
       break;
 
