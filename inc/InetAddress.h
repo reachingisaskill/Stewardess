@@ -14,6 +14,7 @@ namespace Stewardess
 
   class InetAddress
   {
+      friend bool operator==( const InetAddress&, const InetAddress& );
     public:
       enum Type { IPv4, IPv6 };
 
@@ -61,9 +62,44 @@ namespace Stewardess
 
       // Get the port number
       uint16_t getPort() const { return _port; }
-
   };
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+  // Friend functions
+
+  inline bool operator==( const InetAddress& first, const InetAddress& second )
+  {
+    if ( first._type != second._type ) return false;
+
+    if ( first._port != second._port ) return false;
+
+    switch( first._type )
+    {
+      case InetAddress::IPv4 :
+        for ( unsigned int i = 0; i < 4; ++i )
+        {
+          if ( first._addressIPv4[i] != second._addressIPv4[i] ) return false;
+        }
+        break;
+
+
+      case InetAddress::IPv6 :
+        for ( unsigned int i = 0; i < 16; ++i )
+        {
+          if ( first._addressIPv6[i] != second._addressIPv6[i] ) return false;
+        }
+        break;
+    }
+
+    return true;
+  }
+
+
+  inline bool operator!=( const InetAddress& first, const InetAddress& second )
+  {
+    return ! ( first == second );
+  }
 }
 
 #endif // STEWARDESS_INET_ADDRESS_H_
